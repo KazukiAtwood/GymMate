@@ -5,7 +5,7 @@ export default function HomeScreen() {
   const router = useRouter();
 
   function handleDiscover() {
-    router.push("/explore");
+    router.push("/tabs/discover");
   }
 
   return (
