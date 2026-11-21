@@ -1,5 +1,8 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Redirect, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
+import { useAuth } from "@/contexts/AuthContext";
+import { isProfileReady } from "@/utils/profileValidation";
 
 export default function MemberDetailsScreen() {
   const { userId } = useLocalSearchParams<{
@@ -7,6 +10,11 @@ export default function MemberDetailsScreen() {
   }>();
 
   const router = useRouter();
+  const { profile } = useAuth();
+
+  if (!isProfileReady(profile)) {
+    return <Redirect href="/profile" />;
+  }
 
   return (
     <View style={styles.container}>

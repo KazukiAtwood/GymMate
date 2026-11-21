@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
+    KeyboardAvoidingView,
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -8,53 +11,89 @@ import {
     View,
 } from "react-native";
 
-const LEVELS = [
-  { value: "beginner", label: "Débutant" },
-  { value: "intermediate", label: "Intermédiaire" },
-  { value: "advanced", label: "Avancé" },
-];
-
-const SPORTS = [
-  "Musculation",
-  "Fitness",
-  "Running",
-  "Cardio",
-  "CrossFit",
-  "Boxe",
-];
-
-const DAYS = [
-  { value: 1, label: "Lundi" },
-  { value: 2, label: "Mardi" },
-  { value: 3, label: "Mercredi" },
-  { value: 4, label: "Jeudi" },
-  { value: 5, label: "Vendredi" },
-  { value: 6, label: "Samedi" },
-  { value: 7, label: "Dimanche" },
-];
-
-type Availability = {
-  day: number;
-  start: number;
-  end: number;
-};
+import {
+    DAYS,
+    LEVELS,
+    SPORTS,
+    dayLabel,
+    formatMinutes,
+} from "@/constants/profileOptions";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubmitLock } from "@/hooks/useSubmitLock";
+import { logoutAccount } from "@/services/authService";
+import { auth } from "@/services/firebase";
+import {
+    createInitialProfile,
+    profileWriteErrorMessage,
+    updateSportProfile,
+} from "@/services/profileService";
+import type { AvailabilitySlot, SportLevel } from "@/types/profile";
+import {
+    LIMITS,
+    cleanDisplayName,
+    hasFieldErrors,
+    isProfileReady,
+    isSportLevel,
+    validateSportProfile,
+    type ProfileFieldErrors,
+} from "@/utils/profileValidation";
 
 export default function ProfileScreen() {
+  const router = useRouter();
+  const { user, profile, refreshProfile } = useAuth();
+  const dirty = useRef(false);
+  const { pending, run } = useSubmitLock();
+  const { pending: signingOut, run: runLogout } = useSubmitLock();
+
   const [displayName, setDisplayName] = useState("");
   const [city, setCity] = useState("");
-  const [level, setLevel] = useState("");
+  const [level, setLevel] = useState<SportLevel | "">("");
   const [goal, setGoal] = useState("");
   const [sports, setSports] = useState<string[]>([]);
   const [day, setDay] = useState(1);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
-  const [availability, setAvailability] = useState<Availability[]>([]);
+  const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
   const [bio, setBio] = useState("");
+  const [errors, setErrors] = useState<ProfileFieldErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
-  const [errors, setErrors] = useState<string[]>([]);
-  const [success, setSuccess] = useState(false);
+  useEffect(() => {
+    if (profile || !user) {
+      return;
+    }
+
+    void refreshProfile();
+  }, [profile, user, refreshProfile]);
+
+  useEffect(() => {
+    if (dirty.current) {
+      return;
+    }
+
+    if (profile) {
+      setDisplayName(profile.displayName);
+      setCity(profile.city);
+      setLevel(profile.level);
+      setGoal(profile.goal);
+      setSports(profile.sports);
+      setAvailability(profile.availability);
+      setBio(profile.bio);
+      return;
+    }
+
+    if (user?.displayName) {
+      setDisplayName(user.displayName);
+    }
+  }, [profile, user]);
+
+  function touch() {
+    dirty.current = true;
+  }
 
   function toggleSport(sport: string) {
+    touch();
     setSports((currentSports) => {
       if (currentSports.includes(sport)) {
         return currentSports.filter((item) => item !== sport);
@@ -65,6 +104,7 @@ export default function ProfileScreen() {
   }
 
   function addAvailability() {
+    touch();
     const startMinutes = Number(start);
     const endMinutes = Number(end);
 
@@ -75,8 +115,18 @@ export default function ProfileScreen() {
       endMinutes > 1440 ||
       startMinutes >= endMinutes
     ) {
-      setErrors(["La disponibilité doit respecter : 0 ≤ début < fin ≤ 1440."]);
-      setSuccess(false);
+      setErrors((current) => ({
+        ...current,
+        availability: "La disponibilité doit respecter : 0 ≤ début < fin ≤ 1440.",
+      }));
+      return;
+    }
+
+    if (availability.length >= LIMITS.availabilityMax) {
+      setErrors((current) => ({
+        ...current,
+        availability: "Vous pouvez enregistrer 14 disponibilités au maximum.",
+      }));
       return;
     }
 
@@ -88,247 +138,300 @@ export default function ProfileScreen() {
         end: endMinutes,
       },
     ]);
-
     setStart("");
     setEnd("");
-    setErrors([]);
+    setErrors((current) => ({ ...current, availability: undefined }));
   }
 
-  function validateProfile() {
-    const validationErrors: string[] = [];
-
-    if (displayName.trim().length < 2) {
-      validationErrors.push("Le nom doit contenir au moins 2 caractères.");
-    }
-
-    if (city.trim().length < 2) {
-      validationErrors.push("La ville doit contenir au moins 2 caractères.");
-    }
-
-    if (!level) {
-      validationErrors.push("Choisissez un niveau.");
-    }
-
-    if (!goal.trim()) {
-      validationErrors.push("Indiquez votre objectif.");
-    }
-
-    if (sports.length === 0) {
-      validationErrors.push("Sélectionnez au moins un sport.");
-    }
-
-    if (availability.length === 0) {
-      validationErrors.push("Ajoutez au moins une disponibilité.");
-    }
-
-    if (bio.length > 280) {
-      validationErrors.push("La bio ne peut pas dépasser 280 caractères.");
-    }
-
-    setErrors(validationErrors);
-    setSuccess(validationErrors.length === 0);
+  function removeAvailability(index: number) {
+    touch();
+    setAvailability((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
-  function formatMinutes(minutes: number) {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+  function handleSave() {
+    const nextErrors = validateSportProfile({
+      displayName,
+      city,
+      level,
+      goal,
+      sports,
+      availability,
+      bio,
+    });
 
-    return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+    setErrors(nextErrors);
+    setFormError(null);
+
+    if (!user || hasFieldErrors(nextErrors) || !isSportLevel(level)) {
+      return;
+    }
+
+    const profileInput = {
+      displayName,
+      city,
+      level,
+      goal,
+      sports,
+      availability,
+      bio,
+    };
+
+    void run(async () => {
+      try {
+        if (!profile) {
+          await createInitialProfile(user.uid, cleanDisplayName(displayName));
+        }
+
+        await updateSportProfile(user.uid, profileInput);
+        const loaded = await refreshProfile();
+
+        if (loaded && auth.currentUser?.uid === user.uid) {
+          router.replace("/tabs/discover");
+        }
+      } catch (error) {
+        console.error("Erreur d'enregistrement du profil :", error);
+        setFormError(profileWriteErrorMessage(error));
+      }
+    });
   }
 
-  function getDayName(dayNumber: number) {
-    return DAYS.find((item) => item.value === dayNumber)?.label;
+  function handleLogout() {
+    setLogoutError(null);
+
+    void runLogout(async () => {
+      try {
+        await logoutAccount();
+      } catch (error) {
+        console.error("Erreur de déconnexion :", error);
+        setLogoutError("La déconnexion a échoué. Réessayez.");
+      }
+    });
   }
 
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={styles.container}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Text style={styles.title}>Mon profil</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+      >
+        <Text style={styles.title}>Mon profil</Text>
+        <Text style={styles.subtitle}>Complète ton profil sportif</Text>
 
-      <Text style={styles.subtitle}>Complète ton profil sportif</Text>
-
-      {/* NOM */}
-
-      <Text style={styles.label}>Nom affiché</Text>
-
-      <TextInput
-        value={displayName}
-        onChangeText={setDisplayName}
-        placeholder="Ex : Lina"
-        style={styles.input}
-      />
-
-      {/* VILLE */}
-
-      <Text style={styles.label}>Ville</Text>
-
-      <TextInput
-        value={city}
-        onChangeText={setCity}
-        placeholder="Ex : Guyancourt"
-        style={styles.input}
-      />
-
-      {/* NIVEAU */}
-
-      <Text style={styles.label}>Niveau</Text>
-
-      <View style={styles.optionsContainer}>
-        {LEVELS.map((item) => (
-          <Pressable
-            key={item.value}
-            onPress={() => setLevel(item.value)}
-            style={[
-              styles.option,
-              level === item.value && styles.optionSelected,
-            ]}
-          >
-            <Text
-              style={[
-                styles.optionText,
-                level === item.value && styles.optionTextSelected,
-              ]}
-            >
-              {item.label}
+        {!profile ? (
+          <View style={styles.banner}>
+            <Text style={styles.bannerText}>
+              Votre compte est créé, mais le profil sportif n'est pas encore
+              enregistré. Complétez-le pour continuer, sans vous inscrire à
+              nouveau.
             </Text>
+          </View>
+        ) : null}
+
+        {isProfileReady(profile) ? (
+          <Pressable onPress={() => router.back()}>
+            <Text style={styles.back}>Retour</Text>
           </Pressable>
-        ))}
-      </View>
+        ) : null}
 
-      {/* OBJECTIF */}
+        <Text style={styles.label}>Nom affiché</Text>
+        <TextInput
+          value={displayName}
+          onChangeText={(value) => {
+            touch();
+            setDisplayName(value);
+          }}
+          placeholder="Ex : Lina"
+          maxLength={LIMITS.displayNameMax}
+          editable={!pending}
+          style={styles.input}
+        />
+        {errors.displayName ? (
+          <Text style={styles.fieldError}>{errors.displayName}</Text>
+        ) : null}
 
-      <Text style={styles.label}>Objectif</Text>
+        <Text style={styles.label}>Ville</Text>
+        <TextInput
+          value={city}
+          onChangeText={(value) => {
+            touch();
+            setCity(value);
+          }}
+          placeholder="Ex : Guyancourt"
+          maxLength={LIMITS.cityMax}
+          editable={!pending}
+          style={styles.input}
+        />
+        {errors.city ? <Text style={styles.fieldError}>{errors.city}</Text> : null}
 
-      <TextInput
-        value={goal}
-        onChangeText={setGoal}
-        placeholder="Ex : Remise en forme"
-        style={styles.input}
-      />
-
-      {/* SPORTS */}
-
-      <Text style={styles.label}>Sports</Text>
-
-      <View style={styles.optionsContainer}>
-        {SPORTS.map((sport) => (
-          <Pressable
-            key={sport}
-            onPress={() => toggleSport(sport)}
-            style={[
-              styles.option,
-              sports.includes(sport) && styles.optionSelected,
-            ]}
-          >
-            <Text
-              style={[
-                styles.optionText,
-                sports.includes(sport) && styles.optionTextSelected,
-              ]}
+        <Text style={styles.label}>Niveau</Text>
+        <View style={styles.optionsContainer}>
+          {LEVELS.map((item) => (
+            <Pressable
+              key={item.value}
+              onPress={() => {
+                touch();
+                setLevel(item.value);
+              }}
+              style={[styles.option, level === item.value && styles.optionSelected]}
             >
-              {sport}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* DISPONIBILITÉ */}
-
-      <Text style={styles.label}>Disponibilités</Text>
-
-      <Text style={styles.helper}>
-        Les horaires sont exprimés en minutes depuis minuit. Exemple : 18h =
-        1080.
-      </Text>
-
-      <View style={styles.optionsContainer}>
-        {DAYS.map((item) => (
-          <Pressable
-            key={item.value}
-            onPress={() => setDay(item.value)}
-            style={[styles.option, day === item.value && styles.optionSelected]}
-          >
-            <Text
-              style={[
-                styles.optionText,
-                day === item.value && styles.optionTextSelected,
-              ]}
-            >
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <TextInput
-        value={start}
-        onChangeText={setStart}
-        placeholder="Début en minutes (ex : 1080)"
-        keyboardType="numeric"
-        style={styles.input}
-      />
-
-      <TextInput
-        value={end}
-        onChangeText={setEnd}
-        placeholder="Fin en minutes (ex : 1200)"
-        keyboardType="numeric"
-        style={styles.input}
-      />
-
-      <Pressable style={styles.secondaryButton} onPress={addAvailability}>
-        <Text style={styles.secondaryButtonText}>
-          Ajouter cette disponibilité
-        </Text>
-      </Pressable>
-
-      {availability.map((item, index) => (
-        <View key={`${item.day}-${index}`} style={styles.availability}>
-          <Text style={styles.availabilityText}>
-            {getDayName(item.day)} : {formatMinutes(item.start)} -{" "}
-            {formatMinutes(item.end)}
-          </Text>
-        </View>
-      ))}
-
-      {/* BIO */}
-
-      <Text style={styles.label}>Bio</Text>
-
-      <TextInput
-        value={bio}
-        onChangeText={setBio}
-        placeholder="Présente-toi..."
-        multiline
-        maxLength={280}
-        style={[styles.input, styles.bioInput]}
-      />
-
-      <Text style={styles.counter}>{bio.length}/280</Text>
-
-      {/* ERREURS */}
-
-      {errors.length > 0 && (
-        <View style={styles.errorContainer}>
-          {errors.map((error) => (
-            <Text key={error} style={styles.error}>
-              • {error}
-            </Text>
+              <Text
+                style={[
+                  styles.optionText,
+                  level === item.value && styles.optionTextSelected,
+                ]}
+              >
+                {item.label}
+              </Text>
+            </Pressable>
           ))}
         </View>
-      )}
+        {errors.level ? <Text style={styles.fieldError}>{errors.level}</Text> : null}
 
-      {/* SUCCÈS */}
+        <Text style={styles.label}>Objectif</Text>
+        <TextInput
+          value={goal}
+          onChangeText={(value) => {
+            touch();
+            setGoal(value);
+          }}
+          placeholder="Ex : Remise en forme"
+          maxLength={LIMITS.goalMax}
+          editable={!pending}
+          style={styles.input}
+        />
+        {errors.goal ? <Text style={styles.fieldError}>{errors.goal}</Text> : null}
 
-      {success && <Text style={styles.success}>Profil valide !</Text>}
+        <Text style={styles.label}>Sports</Text>
+        <View style={styles.optionsContainer}>
+          {SPORTS.map((sport) => (
+            <Pressable
+              key={sport}
+              onPress={() => toggleSport(sport)}
+              style={[styles.option, sports.includes(sport) && styles.optionSelected]}
+            >
+              <Text
+                style={[
+                  styles.optionText,
+                  sports.includes(sport) && styles.optionTextSelected,
+                ]}
+              >
+                {sport}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        {errors.sports ? (
+          <Text style={styles.fieldError}>{errors.sports}</Text>
+        ) : null}
 
-      <Pressable style={styles.button} onPress={validateProfile}>
-        <Text style={styles.buttonText}>Valider mon profil</Text>
-      </Pressable>
-    </ScrollView>
+        <Text style={styles.label}>Disponibilités</Text>
+        <Text style={styles.helper}>
+          Les horaires sont exprimés en minutes depuis minuit. Exemple : 18h =
+          1080.
+        </Text>
+        <View style={styles.optionsContainer}>
+          {DAYS.map((item) => (
+            <Pressable
+              key={item.value}
+              onPress={() => setDay(item.value)}
+              style={[styles.option, day === item.value && styles.optionSelected]}
+            >
+              <Text
+                style={[
+                  styles.optionText,
+                  day === item.value && styles.optionTextSelected,
+                ]}
+              >
+                {item.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <TextInput
+          value={start}
+          onChangeText={setStart}
+          placeholder="Début en minutes (ex : 1080)"
+          keyboardType="numeric"
+          editable={!pending}
+          style={styles.input}
+        />
+        <TextInput
+          value={end}
+          onChangeText={setEnd}
+          placeholder="Fin en minutes (ex : 1200)"
+          keyboardType="numeric"
+          editable={!pending}
+          style={styles.input}
+        />
+        <Pressable style={styles.secondaryButton} onPress={addAvailability}>
+          <Text style={styles.secondaryButtonText}>Ajouter cette disponibilité</Text>
+        </Pressable>
+        {availability.map((item, index) => (
+          <View key={`${item.day}-${item.start}-${item.end}-${index}`} style={styles.availability}>
+            <Text style={styles.availabilityText}>
+              {dayLabel(item.day)} : {formatMinutes(item.start)} -{" "}
+              {formatMinutes(item.end)}
+            </Text>
+            <Pressable onPress={() => removeAvailability(index)}>
+              <Text style={styles.removeText}>Retirer</Text>
+            </Pressable>
+          </View>
+        ))}
+        {errors.availability ? (
+          <Text style={styles.fieldError}>{errors.availability}</Text>
+        ) : null}
+
+        <Text style={styles.label}>Bio</Text>
+        <TextInput
+          value={bio}
+          onChangeText={(value) => {
+            touch();
+            setBio(value);
+          }}
+          placeholder="Présente-toi..."
+          multiline
+          maxLength={LIMITS.bioMax}
+          editable={!pending}
+          style={[styles.input, styles.bioInput]}
+        />
+        <Text style={styles.counter}>
+          {bio.trim().length}/{LIMITS.bioMax}
+        </Text>
+        {errors.bio ? <Text style={styles.fieldError}>{errors.bio}</Text> : null}
+
+        {formError ? <Text style={styles.formError}>{formError}</Text> : null}
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            pending && styles.buttonDisabled,
+            pressed && !pending && styles.buttonPressed,
+          ]}
+          onPress={handleSave}
+          disabled={pending}
+        >
+          <Text style={styles.buttonText}>
+            {pending ? "Enregistrement..." : "Enregistrer mon profil"}
+          </Text>
+        </Pressable>
+
+        {logoutError ? <Text style={styles.fieldError}>{logoutError}</Text> : null}
+
+        <Pressable
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          disabled={signingOut || pending}
+        >
+          <Text style={styles.logoutText}>
+            {signingOut ? "Déconnexion..." : "Se déconnecter"}
+          </Text>
+        </Pressable>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -340,6 +443,7 @@ const styles = StyleSheet.create({
 
   content: {
     padding: 20,
+    paddingTop: 64,
     paddingBottom: 50,
   },
 
@@ -351,9 +455,27 @@ const styles = StyleSheet.create({
 
   subtitle: {
     marginTop: 6,
-    marginBottom: 28,
+    marginBottom: 20,
     fontSize: 16,
     color: "#6B7280",
+  },
+
+  banner: {
+    backgroundColor: "#FEF3C7",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+
+  bannerText: {
+    color: "#92400E",
+    lineHeight: 20,
+  },
+
+  back: {
+    color: "#3C87F7",
+    fontWeight: "700",
+    marginBottom: 8,
   },
 
   label: {
@@ -379,6 +501,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontSize: 15,
+    marginTop: 8,
   },
 
   bioInput: {
@@ -441,30 +564,35 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
   },
 
   availabilityText: {
     color: "#1E40AF",
     fontWeight: "600",
+    flex: 1,
   },
 
-  errorContainer: {
-    marginTop: 20,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: "#FEE2E2",
-  },
-
-  error: {
+  removeText: {
     color: "#B91C1C",
-    marginBottom: 4,
+    fontWeight: "700",
   },
 
-  success: {
+  fieldError: {
+    color: "#B91C1C",
+    marginTop: 6,
+  },
+
+  formError: {
     marginTop: 20,
-    color: "#15803D",
-    fontWeight: "700",
-    textAlign: "center",
+    color: "#B91C1C",
+    backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    padding: 14,
+    lineHeight: 20,
   },
 
   button: {
@@ -475,9 +603,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+
+  buttonPressed: {
+    opacity: 0.7,
+  },
+
   buttonText: {
     color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "700",
+  },
+
+  logoutButton: {
+    marginTop: 16,
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+
+  logoutText: {
+    color: "#B91C1C",
     fontWeight: "700",
   },
 });

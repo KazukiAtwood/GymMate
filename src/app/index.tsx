@@ -4,8 +4,12 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 export default function HomeScreen() {
   const router = useRouter();
 
-  function handleDiscover() {
-    router.push("/tabs/discover");
+  function handleLogin() {
+    router.push("/auth/login");
+  }
+
+  function handleRegister() {
+    router.push("/auth/register");
   }
 
   return (
@@ -24,9 +28,19 @@ export default function HomeScreen() {
             styles.button,
             pressed && styles.buttonPressed,
           ]}
-          onPress={handleDiscover}
+          onPress={handleLogin}
         >
-          <Text style={styles.buttonText}>Découvrir</Text>
+          <Text style={styles.buttonText}>Se connecter</Text>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.secondaryButton,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={handleRegister}
+        >
+          <Text style={styles.secondaryButtonText}>Créer un compte</Text>
         </Pressable>
       </View>
     </View>
@@ -76,6 +90,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 12,
+    minWidth: 220,
+    alignItems: "center",
   },
 
   buttonPressed: {
@@ -84,6 +100,23 @@ const styles = StyleSheet.create({
 
   buttonText: {
     color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  secondaryButton: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#3C87F7",
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 12,
+    minWidth: 220,
+    alignItems: "center",
+  },
+
+  secondaryButtonText: {
+    color: "#3C87F7",
     fontSize: 16,
     fontWeight: "700",
   },

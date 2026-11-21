@@ -1,8 +1,18 @@
-import { MemberCard } from "@/components/MemberCard";
-import { mockMembers } from "@/constants/mockMembers";
+import { Redirect } from "expo-router";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 
+import { MemberCard } from "@/components/MemberCard";
+import { mockMembers } from "@/constants/mockMembers";
+import { useAuth } from "@/contexts/AuthContext";
+import { isProfileReady } from "@/utils/profileValidation";
+
 export default function ExploreScreen() {
+  const { profile } = useAuth();
+
+  if (!isProfileReady(profile)) {
+    return <Redirect href="/profile" />;
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Découvrir</Text>

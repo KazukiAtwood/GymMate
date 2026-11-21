@@ -1,0 +1,136 @@
+rules_version = '2';
+
+// J5 : le propriétaire lit et écrit son profil.
+// gymId reste null jusqu'au choix de salle (J6).
+// Les nombres ci-dessous suivent src/utils/profileValidation.ts.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function profileKeys() {
+      return [
+        "displayName",
+        "city",
+        "level",
+        "goal",
+        "sports",
+        "availability",
+        "bio",
+        "gymId",
+        "createdAt",
+        "updatedAt"
+      ];
+    }
+
+    function allowedSports() {
+      return [
+        "Musculation",
+        "Fitness",
+        "Running",
+        "Cardio",
+        "CrossFit",
+        "Boxe"
+      ];
+    }
+
+    function validAvailabilityItem(item) {
+      return item.keys().hasOnly(["day", "start", "end"])
+        && item.day is int
+        && item.day >= 1
+        && item.day <= 7
+        && item.start is int
+        && item.end is int
+        && item.start >= 0
+        && item.end <= 1440
+        && item.start < item.end;
+    }
+
+    function validAvailability(items) {
+      return items is list
+        && items.size() <= 14
+        && (items.size() < 1 || validAvailabilityItem(items[0]))
+        && (items.size() < 2 || validAvailabilityItem(items[1]))
+        && (items.size() < 3 || validAvailabilityItem(items[2]))
+        && (items.size() < 4 || validAvailabilityItem(items[3]))
+        && (items.size() < 5 || validAvailabilityItem(items[4]))
+        && (items.size() < 6 || validAvailabilityItem(items[5]))
+        && (items.size() < 7 || validAvailabilityItem(items[6]))
+        && (items.size() < 8 || validAvailabilityItem(items[7]))
+        && (items.size() < 9 || validAvailabilityItem(items[8]))
+        && (items.size() < 10 || validAvailabilityItem(items[9]))
+        && (items.size() < 11 || validAvailabilityItem(items[10]))
+        && (items.size() < 12 || validAvailabilityItem(items[11]))
+        && (items.size() < 13 || validAvailabilityItem(items[12]))
+        && (items.size() < 14 || validAvailabilityItem(items[13]));
+    }
+
+    function validProfileShape(data) {
+      return data.keys().hasOnly(profileKeys())
+        && data.displayName is string
+        && data.displayName.size() >= 2
+        && data.displayName.size() <= 40
+        && data.city is string
+        && data.city.size() <= 60
+        && (data.city.size() == 0 || data.city.size() >= 2)
+        && data.level is string
+        && data.level in ["", "beginner", "intermediate", "advanced"]
+        && data.goal is string
+        && data.goal.size() <= 80
+        && data.sports is list
+        && data.sports.size() <= 6
+        && data.sports.hasOnly(allowedSports())
+        && validAvailability(data.availability)
+        && data.bio is string
+        && data.bio.size() <= 280
+        && data.gymId == null
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /gyms/{gymId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+
+      allow create: if isOwner(uid)
+        && validProfileShape(request.resource.data)
+        && request.resource.data.city == ""
+        && request.resource.data.level == ""
+        && request.resource.data.goal == ""
+        && request.resource.data.sports.size() == 0
+        && request.resource.data.availability.size() == 0
+        && request.resource.data.bio == ""
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if isOwner(uid)
+        && validProfileShape(request.resource.data)
+        && request.resource.data.gymId == resource.data.gymId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              "displayName",
+              "city",
+              "level",
+              "goal",
+              "sports",
+              "availability",
+              "bio",
+              "updatedAt"
+            ]);
+
+      allow delete: if false;
+    }
+  }
+}

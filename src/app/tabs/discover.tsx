@@ -3,9 +3,9 @@ import { mockMembers } from "@/constants/mockMembers";
 import { useRouter } from "expo-router";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 
-const router = useRouter();
-
 export default function ExploreScreen() {
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Découvrir</Text>
@@ -17,7 +17,17 @@ export default function ExploreScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <MemberCard name={item.name} level={item.level} goal={item.goal} />
+          <MemberCard
+            name={item.name}
+            level={item.level}
+            goal={item.goal}
+            onPress={() =>
+              router.push({
+                pathname: "/members/[userId]",
+                params: { userId: item.id },
+              })
+            }
+          />
         )}
       />
     </View>

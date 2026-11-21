@@ -1,6 +1,15 @@
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
+
+import { useAuth } from "@/contexts/AuthContext";
+import { isProfileReady } from "@/utils/profileValidation";
 
 export default function TabsLayout() {
+  const { profile } = useAuth();
+
+  if (!isProfileReady(profile)) {
+    return <Redirect href="/profile" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
