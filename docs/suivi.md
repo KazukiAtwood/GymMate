@@ -28,3 +28,30 @@ Parcours à refaire sur l'appareil, avec `.env.local` renseigné et `firestore.r
 ### Difficulté
 
 Les règles Firestore du dépôt doivent être publiées dans la console. Tant qu'elles ne le sont pas, l'enregistrement du profil est refusé et l'écran l'indique.
+
+## J6 · Découvrir
+
+Choix d'une salle, puis lecture des autres membres de cette salle.
+
+### Ce qui fonctionne
+
+- Les salles sont lues depuis `gyms` et filtrées localement par nom ou ville.
+- La confirmation enregistre `users/{uid}.gymId` une seule fois. Le document de salle doit exister et le profil sportif doit être complet.
+- Découvrir charge les profils `where gymId ==` la salle courante et retire le compte connecté.
+- La fiche membre affiche les informations sportives. Un membre d'une autre salle est refusé par les règles.
+- Une salle vide propose un message et un rechargement.
+
+### Test réalisé
+
+Vérification TypeScript (`npx tsc --noEmit`).
+
+À refaire avec deux comptes après publication des règles :
+
+1. A et B choisissent Campus Gym SQY. C choisit Campus Training Paris.
+2. A voit B dans Découvrir, pas son propre profil, pas C.
+3. A ouvre la fiche de B. Un accès direct au profil de C est refusé.
+4. Le profil de A affiche le nom de la salle choisie.
+
+### Difficulté
+
+Les règles du J5 refusaient encore tout `gymId` non nul. Elles sont mises à jour dans `firestore.rules` et doivent être republiées avant le choix de salle.

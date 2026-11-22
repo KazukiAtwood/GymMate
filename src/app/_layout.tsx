@@ -43,6 +43,7 @@ function RootNavigator() {
       <Stack.Protected guard={Boolean(user)}>
         <Stack.Screen name="tabs" />
         <Stack.Screen name="profile" />
+        <Stack.Screen name="gym" />
         <Stack.Screen name="members/[userId]" />
         <Stack.Screen name="explore" />
       </Stack.Protected>

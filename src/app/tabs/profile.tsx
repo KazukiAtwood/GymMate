@@ -1,17 +1,47 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { dayLabel, formatMinutes, levelLabel } from "@/constants/profileOptions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubmitLock } from "@/hooks/useSubmitLock";
 import { logoutAccount } from "@/services/authService";
+import { getGym } from "@/services/gymService";
 
 export default function ProfileTab() {
   const router = useRouter();
   const { user, profile } = useAuth();
   const { pending: signingOut, run: runLogout } = useSubmitLock();
   const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [gymLabel, setGymLabel] = useState("à choisir ensuite");
+
+  useEffect(() => {
+    const gymId = profile?.gymId;
+
+    if (!gymId) {
+      setGymLabel("à choisir ensuite");
+      return;
+    }
+
+    let active = true;
+    setGymLabel(gymId);
+
+    void getGym(gymId)
+      .then((gym) => {
+        if (!active || !gym) {
+          return;
+        }
+
+        setGymLabel(`${gym.name} · ${gym.city}`);
+      })
+      .catch((loadError) => {
+        console.error("Erreur de lecture de la salle :", loadError);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [profile?.gymId]);
 
   function handleLogout() {
     setLogoutError(null);
@@ -39,7 +69,7 @@ export default function ProfileTab() {
           Sports : {profile?.sports.length ? profile.sports.join(", ") : "Aucun"}
         </Text>
         <Text style={styles.line}>
-          Salle : {profile?.gymId ? profile.gymId : "à choisir ensuite"}
+          Salle : {gymLabel}
         </Text>
         {profile?.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
       </View>

@@ -1,35 +1,122 @@
-import { MemberCard } from "@/components/MemberCard";
-import { mockMembers } from "@/constants/mockMembers";
 import { useRouter } from "expo-router";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import {
+    ActivityIndicator,
+    FlatList,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 
-export default function ExploreScreen() {
+import { MemberCard } from "@/components/MemberCard";
+import {
+    formatAvailabilitySummary,
+    levelLabel,
+} from "@/constants/profileOptions";
+import { useAuth } from "@/contexts/AuthContext";
+import { getGym } from "@/services/gymService";
+import { listGymMembers } from "@/services/profileService";
+import type { SportProfile } from "@/types/profile";
+import { readErrorCode } from "@/utils/errorCode";
+
+export default function DiscoverScreen() {
   const router = useRouter();
+  const { user, profile } = useAuth();
+  const [members, setMembers] = useState<SportProfile[]>([]);
+  const [gymName, setGymName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadMembers = useCallback(async () => {
+    if (!user || !profile?.gymId) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [nextMembers, gym] = await Promise.all([
+        listGymMembers(profile.gymId, user.uid),
+        getGym(profile.gymId),
+      ]);
+
+      setMembers(nextMembers);
+      setGymName(gym ? `${gym.name} · ${gym.city}` : "");
+    } catch (loadError) {
+      console.error("Erreur de lecture des membres :", loadError);
+      const code = readErrorCode(loadError);
+
+      if (code === "permission-denied") {
+        setError(
+          "La lecture des membres a été refusée. Publiez les règles Firestore, puis réessayez.",
+        );
+      } else if (code === "unavailable" || code === "deadline-exceeded") {
+        setError("Connexion réseau impossible. Réessayez.");
+      } else {
+        setError("Les membres sont indisponibles. Réessayez.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [profile?.gymId, user]);
+
+  useEffect(() => {
+    void loadMembers();
+  }, [loadMembers]);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Découvrir</Text>
+      <Text style={styles.subtitle}>
+        {gymName || "Les sportifs de ta salle"}
+      </Text>
 
-      <Text style={styles.subtitle}>Les sportifs disponibles</Text>
-
-      <FlatList
-        data={mockMembers}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <MemberCard
-            name={item.name}
-            level={item.level}
-            goal={item.goal}
-            onPress={() =>
-              router.push({
-                pathname: "/members/[userId]",
-                params: { userId: item.id },
-              })
-            }
-          />
-        )}
-      />
+      {loading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#3C87F7" />
+        </View>
+      ) : error ? (
+        <View style={styles.centered}>
+          <Text style={styles.message}>{error}</Text>
+          <Pressable style={styles.button} onPress={() => void loadMembers()}>
+            <Text style={styles.buttonText}>Réessayer</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <FlatList
+          style={styles.listView}
+          data={members}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Text style={styles.message}>
+                Tu es seul dans cette salle pour le moment. Reviens plus tard
+                ou recharge la liste.
+              </Text>
+              <Pressable style={styles.button} onPress={() => void loadMembers()}>
+                <Text style={styles.buttonText}>Recharger</Text>
+              </Pressable>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <MemberCard
+              name={item.displayName}
+              level={levelLabel(item.level)}
+              goal={item.goal}
+              availability={formatAvailabilitySummary(item.availability)}
+              onPress={() =>
+                router.push({
+                  pathname: "/members/[userId]",
+                  params: { userId: item.id },
+                })
+              }
+            />
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -58,5 +145,40 @@ const styles = StyleSheet.create({
   list: {
     gap: 16,
     paddingBottom: 24,
+  },
+
+  listView: {
+    flex: 1,
+  },
+
+  centered: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 80,
+  },
+
+  empty: {
+    alignItems: "center",
+    paddingTop: 24,
+  },
+
+  message: {
+    color: "#6B7280",
+    textAlign: "center",
+    lineHeight: 22,
+  },
+
+  button: {
+    marginTop: 16,
+    backgroundColor: "#3C87F7",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+  },
+
+  buttonText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
 });

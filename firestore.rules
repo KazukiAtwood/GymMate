@@ -1,7 +1,7 @@
 rules_version = '2';
 
-// J5 : le propriétaire lit et écrit son profil.
-// gymId reste null jusqu'au choix de salle (J6).
+// J6 : lecture du propriétaire ou des membres de la même salle.
+// Le gymId passe une seule fois de null à une salle existante.
 // Les nombres ci-dessous suivent src/utils/profileValidation.ts.
 
 service cloud.firestore {
@@ -89,9 +89,34 @@ service cloud.firestore {
         && validAvailability(data.availability)
         && data.bio is string
         && data.bio.size() <= 280
-        && data.gymId == null
+        && (data.gymId == null || (data.gymId is string && data.gymId.size() > 0 && data.gymId.size() <= 64))
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
+    }
+
+    function profileIsComplete(data) {
+      return data.displayName.size() >= 2
+        && data.city.size() >= 2
+        && data.level in ["beginner", "intermediate", "advanced"]
+        && data.goal.size() > 0
+        && data.sports.size() > 0
+        && data.availability.size() > 0;
+    }
+
+    function currentUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function sameGymMember() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && resource.data.gymId is string
+        && resource.data.gymId.size() > 0
+        && currentUserData().gymId == resource.data.gymId;
+    }
+
+    function gymExists(gymId) {
+      return exists(/databases/$(database)/documents/gyms/$(gymId));
     }
 
     match /gyms/{gymId} {
@@ -100,10 +125,11 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if isOwner(uid);
+      allow read: if isOwner(uid) || sameGymMember();
 
       allow create: if isOwner(uid)
         && validProfileShape(request.resource.data)
+        && request.resource.data.gymId == null
         && request.resource.data.city == ""
         && request.resource.data.level == ""
         && request.resource.data.goal == ""
@@ -115,20 +141,33 @@ service cloud.firestore {
 
       allow update: if isOwner(uid)
         && validProfileShape(request.resource.data)
-        && request.resource.data.gymId == resource.data.gymId
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt == request.time
-        && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly([
-              "displayName",
-              "city",
-              "level",
-              "goal",
-              "sports",
-              "availability",
-              "bio",
-              "updatedAt"
-            ]);
+        && (
+          (
+            request.resource.data.gymId == resource.data.gymId
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly([
+                  "displayName",
+                  "city",
+                  "level",
+                  "goal",
+                  "sports",
+                  "availability",
+                  "bio",
+                  "updatedAt"
+                ])
+          )
+          || (
+            resource.data.gymId == null
+            && request.resource.data.gymId is string
+            && request.resource.data.gymId.matches('^[A-Za-z0-9_]+$')
+            && gymExists(request.resource.data.gymId)
+            && profileIsComplete(request.resource.data)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(["gymId", "updatedAt"])
+          )
+        );
 
       allow delete: if false;
     }

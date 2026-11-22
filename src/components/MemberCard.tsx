@@ -4,10 +4,17 @@ type MemberCardProps = {
   name: string;
   level: string;
   goal: string;
+  availability?: string;
   onPress?: () => void;
 };
 
-export function MemberCard({ name, level, goal, onPress }: MemberCardProps) {
+export function MemberCard({
+  name,
+  level,
+  goal,
+  availability,
+  onPress,
+}: MemberCardProps) {
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
@@ -19,6 +26,8 @@ export function MemberCard({ name, level, goal, onPress }: MemberCardProps) {
         <Text style={styles.info}>Niveau : {level}</Text>
 
         <Text style={styles.info}>Objectif : {goal}</Text>
+
+        {availability ? <Text style={styles.info}>{availability}</Text> : null}
       </View>
     </Pressable>
   );

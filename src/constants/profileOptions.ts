@@ -39,3 +39,22 @@ export function formatMinutes(minutes: number) {
 
   return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 }
+
+export function formatAvailabilitySummary(
+  slots: { day: number; start: number; end: number }[],
+) {
+  if (slots.length === 0) {
+    return "Disponibilités non renseignées";
+  }
+
+  const labels = slots.slice(0, 2).map(
+    (slot) =>
+      `${dayLabel(slot.day)} ${formatMinutes(slot.start)}-${formatMinutes(slot.end)}`,
+  );
+
+  if (slots.length > 2) {
+    labels.push(`+${slots.length - 2}`);
+  }
+
+  return labels.join(" · ");
+}

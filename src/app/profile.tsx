@@ -186,7 +186,7 @@ export default function ProfileScreen() {
         const loaded = await refreshProfile();
 
         if (loaded && auth.currentUser?.uid === user.uid) {
-          router.replace("/tabs/discover");
+          router.replace(profile?.gymId ? "/tabs/discover" : "/gym");
         }
       } catch (error) {
         console.error("Erreur d'enregistrement du profil :", error);

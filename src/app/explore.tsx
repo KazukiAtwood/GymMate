@@ -13,6 +13,10 @@ export default function ExploreScreen() {
     return <Redirect href="/profile" />;
   }
 
+  if (!profile?.gymId) {
+    return <Redirect href="/gym" />;
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Découvrir</Text>

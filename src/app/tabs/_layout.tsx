@@ -10,6 +10,10 @@ export default function TabsLayout() {
     return <Redirect href="/profile" />;
   }
 
+  if (!profile?.gymId) {
+    return <Redirect href="/gym" />;
+  }
+
   return (
     <Tabs
       screenOptions={{

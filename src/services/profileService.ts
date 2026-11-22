@@ -1,4 +1,14 @@
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    query,
+    serverTimestamp,
+    setDoc,
+    updateDoc,
+    where,
+} from "firebase/firestore";
 
 import type { SportProfile, SportProfileInput } from "@/types/profile";
 import { readErrorCode } from "@/utils/errorCode";
@@ -118,6 +128,18 @@ export async function createInitialProfile(uid: string, displayName: string) {
 
     throw error;
   }
+}
+
+export async function listGymMembers(gymId: string, currentUid: string) {
+  const membersQuery = query(
+    collection(db, "users"),
+    where("gymId", "==", gymId),
+  );
+  const snapshot = await getDocs(membersQuery);
+
+  return snapshot.docs
+    .map((member) => mapProfile(member.id, member.data()))
+    .filter((member) => member.id !== currentUid);
 }
 
 export async function updateSportProfile(uid: string, input: SportProfileInput) {
