@@ -71,3 +71,31 @@ Envoi d'une demande d'entraînement et listes reçues / envoyées.
 ### Test à faire
 
 Après publication des règles : Patrick propose à Sami Musculation demain de 18:00 à 19:00. La demande apparaît dans Envoyées chez Patrick et dans Reçues chez Sami. Une date passée est refusée. Un deuxième appui ne crée pas une deuxième demande.
+
+## J8 · Relier
+
+Accepter une demande crée, dans une seule transaction, la relation, le chat et la séance. Refuser ne change que la demande.
+
+### Ce qui fonctionne
+
+- Le destinataire accepte ou refuse une demande encore `pending`.
+- L'acceptation lit la demande et la relation, puis écrit le statut `accepted`, `relations/{pairId}`, `chats/{pairId}` et `trainingSessions/{requestId}`.
+- `pairId` est le couple d'UID trié, joint par `__`. Une deuxième séance entre les mêmes personnes réutilise la relation et le chat.
+- Une acceptation déjà enregistrée ne crée pas une deuxième séance. Un créneau passé ne peut plus être accepté.
+- Un refus passe la demande à `rejected` et laisse une relation déjà existante inchangée.
+- Mes relations liste les partenaires et ouvre le chat. Mes séances sépare À venir et Historique.
+- Un participant peut annuler une séance planifiée, ou la marquer terminée après l'heure de fin.
+
+### Test à faire
+
+Après republication de `firestore.rules` :
+
+1. Sami refuse une demande de Patrick : statut Refusée, rien dans Relations ni Séances.
+2. Sami accepte une autre demande : une relation, un chat et une séance visibles des deux côtés.
+3. Un deuxième appui sur Accepter ne crée pas une autre séance.
+4. Une nouvelle demande acceptée ajoute une séance et conserve la même relation.
+5. Patrick annule la séance : Sami voit Annulée dans Historique après actualisation.
+
+### Difficulté
+
+Les règles doivent être republiées. L'envoi des messages du chat reste le J9 : la conversation s'ouvre et n'a pas encore de saisie.

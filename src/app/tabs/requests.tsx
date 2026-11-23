@@ -13,8 +13,11 @@ import { RequestCard } from "@/components/RequestCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserProfile } from "@/services/profileService";
 import {
+    acceptTrainingRequest,
     listReceivedRequests,
     listSentRequests,
+    rejectTrainingRequest,
+    RequestServiceError,
 } from "@/services/requestService";
 import type { TrainingRequest } from "@/types/trainingRequest";
 import { readErrorCode } from "@/utils/errorCode";
@@ -34,6 +37,9 @@ export default function RequestsScreen() {
   const [names, setNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (tab === "sent" || tab === "received") {
@@ -41,12 +47,15 @@ export default function RequestsScreen() {
     }
   }, [tab]);
 
-  const loadRequests = useCallback(async () => {
+  const loadRequests = useCallback(async (silent = false) => {
     if (!user) {
       return;
     }
 
-    setLoading(true);
+    if (!silent) {
+      setLoading(true);
+    }
+
     setError(null);
 
     try {
@@ -84,9 +93,44 @@ export default function RequestsScreen() {
           : "Les demandes sont indisponibles. Réessaie.",
       );
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [mode, user]);
+
+  async function respond(requestId: string, decision: "accept" | "reject") {
+    if (!user || respondingId) {
+      return;
+    }
+
+    setRespondingId(requestId);
+    setActionError(null);
+    setActionNotice(null);
+
+    try {
+      const result =
+        decision === "accept"
+          ? await acceptTrainingRequest(requestId, user.uid)
+          : await rejectTrainingRequest(requestId, user.uid);
+
+      setActionNotice(
+        result.status === "accepted"
+          ? "Demande acceptée. La relation et la séance sont enregistrées."
+          : "Demande refusée.",
+      );
+      await loadRequests(true);
+    } catch (respondError) {
+      console.error("Erreur de réponse à la demande :", respondError);
+      setActionError(
+        respondError instanceof RequestServiceError
+          ? respondError.message
+          : "La réponse n'a pas pu être enregistrée. Réessaie.",
+      );
+    } finally {
+      setRespondingId(null);
+    }
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -127,6 +171,8 @@ export default function RequestsScreen() {
       {notice === "already" ? (
         <Text style={styles.notice}>Cette demande avait déjà été envoyée.</Text>
       ) : null}
+      {actionNotice ? <Text style={styles.notice}>{actionNotice}</Text> : null}
+      {actionError ? <Text style={styles.actionError}>{actionError}</Text> : null}
 
       {loading ? (
         <View style={styles.centered}>
@@ -168,6 +214,11 @@ export default function RequestsScreen() {
                 hours={slot?.hours ?? ""}
                 status={item.status}
                 message={item.message}
+                canRespond={mode === "received" && item.status === "pending"}
+                slotPassed={Boolean(item.startsAt && item.startsAt.toMillis() <= Date.now())}
+                responding={respondingId === item.id}
+                onAccept={() => void respond(item.id, "accept")}
+                onReject={() => void respond(item.id, "reject")}
               />
             );
           }}
@@ -228,6 +279,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#E0ECFF",
     borderRadius: 12,
     padding: 12,
+  },
+
+  actionError: {
+    marginBottom: 12,
+    color: "#991B1B",
+    backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    padding: 12,
+    lineHeight: 20,
   },
 
   listView: {

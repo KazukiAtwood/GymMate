@@ -1,7 +1,7 @@
 rules_version = '2';
 
-// J7 : une demande est lisible par ses deux participants.
-// Seul l'expéditeur peut la créer, avec le statut pending.
+// J8 : le destinataire accepte dans une transaction
+// (demande, relation, chat et séance) ou refuse la demande seule.
 // Les nombres ci-dessous suivent src/utils/profileValidation.ts.
 
 service cloud.firestore {
@@ -193,8 +193,118 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(uid)).data.gymId;
     }
 
+    function canonicalPairId(uidA, uidB) {
+      return uidA < uidB
+        ? uidA + '__' + uidB
+        : uidB + '__' + uidA;
+    }
+
+    function pairContainsUid(pairId, uid) {
+      return pairId.matches('^[A-Za-z0-9]+__[A-Za-z0-9]+$')
+        && (
+          pairId.matches('^' + uid + '__[A-Za-z0-9]+$')
+          || pairId.matches('^[A-Za-z0-9]+__' + uid + '$')
+        );
+    }
+
+    function sameParticipants(members, senderId, receiverId) {
+      return members is list
+        && members.size() == 2
+        && members.hasAll([senderId, receiverId])
+        && members.hasOnly([senderId, receiverId]);
+    }
+
+    function requestData(requestId) {
+      return get(/databases/$(database)/documents/trainingRequests/$(requestId)).data;
+    }
+
+    function requestAfter(requestId) {
+      return getAfter(/databases/$(database)/documents/trainingRequests/$(requestId)).data;
+    }
+
+    function relationKeys() {
+      return ["members", "gymId", "sourceRequestId", "createdAt"];
+    }
+
+    function chatKeys() {
+      return ["relationId", "members", "createdAt"];
+    }
+
+    function sessionKeys() {
+      return [
+        "requestId",
+        "relationId",
+        "members",
+        "gymId",
+        "sport",
+        "startsAt",
+        "endsAt",
+        "timeZone",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ];
+    }
+
+    function relationShapeIsValid(pairId, data) {
+      return data.members is list
+        && data.members.size() == 2
+        && data.members[0] is string
+        && data.members[1] is string
+        && data.members[0] < data.members[1]
+        && pairId == data.members[0] + '__' + data.members[1]
+        && request.auth.uid in data.members
+        && data.gymId is string
+        && data.gymId.matches('^[A-Za-z0-9_]+$')
+        && data.sourceRequestId is string
+        && data.sourceRequestId.size() > 0
+        && data.createdAt == request.time;
+    }
+
+    function relationMatchesSource(data, source) {
+      return source.status == "accepted"
+        && source.receiverId == request.auth.uid
+        && source.respondedAt == request.time
+        && source.gymId == data.gymId
+        && sameParticipants(data.members, source.senderId, source.receiverId);
+    }
+
+    function chatMatchesRelation(pairId, data, relation, source) {
+      return data.relationId == pairId
+        && data.createdAt == request.time
+        && data.members == relation.members
+        && request.auth.uid in data.members
+        && source.status == "accepted"
+        && source.receiverId == request.auth.uid
+        && source.respondedAt == request.time;
+    }
+
+    function sessionMatchesRequest(data, source) {
+      return source.status == "accepted"
+        && source.receiverId == request.auth.uid
+        && source.respondedAt == request.time
+        && data.relationId == canonicalPairId(source.senderId, source.receiverId)
+        && sameParticipants(data.members, source.senderId, source.receiverId)
+        && data.gymId == source.gymId
+        && data.sport == source.sport
+        && data.sport in allowedSports()
+        && data.startsAt == source.startsAt
+        && data.endsAt == source.endsAt
+        && data.timeZone == source.timeZone
+        && data.timeZone == "Europe/Paris"
+        && data.status == "planned"
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
     match /trainingRequests/{requestId} {
-      allow read: if signedIn()
+      allow get: if signedIn() && (
+        resource == null
+        || resource.data.senderId == request.auth.uid
+        || resource.data.receiverId == request.auth.uid
+      );
+
+      allow list: if signedIn()
         && (
           resource.data.senderId == request.auth.uid
           || resource.data.receiverId == request.auth.uid
@@ -206,16 +316,11 @@ service cloud.firestore {
         && request.resource.data.receiverId is string
         && request.resource.data.receiverId.size() > 0
         && request.resource.data.receiverId != request.auth.uid
-        && request.resource.data.members is list
-        && request.resource.data.members.size() == 2
-        && request.resource.data.members.hasAll([
+        && sameParticipants(
+          request.resource.data.members,
           request.resource.data.senderId,
           request.resource.data.receiverId
-        ])
-        && request.resource.data.members.hasOnly([
-          request.resource.data.senderId,
-          request.resource.data.receiverId
-        ])
+        )
         && request.resource.data.gymId is string
         && request.resource.data.gymId.matches('^[A-Za-z0-9_]+$')
         && gymExists(request.resource.data.gymId)
@@ -238,10 +343,110 @@ service cloud.firestore {
       allow update: if signedIn()
         && request.auth.uid == resource.data.receiverId
         && resource.data.status == "pending"
-        && request.resource.data.status in ["accepted", "rejected"]
         && request.resource.data.respondedAt == request.time
         && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(["status", "respondedAt"]);
+            .hasOnly(["status", "respondedAt"])
+        && (
+          (
+            request.resource.data.status == "rejected"
+            && !existsAfter(/databases/$(database)/documents/trainingSessions/$(requestId))
+          )
+          || (
+            request.resource.data.status == "accepted"
+            && resource.data.startsAt > request.time
+            && existsAfter(/databases/$(database)/documents/trainingSessions/$(requestId))
+            && existsAfter(/databases/$(database)/documents/relations/$(canonicalPairId(resource.data.senderId, resource.data.receiverId)))
+            && existsAfter(/databases/$(database)/documents/chats/$(canonicalPairId(resource.data.senderId, resource.data.receiverId)))
+            && getAfter(/databases/$(database)/documents/trainingSessions/$(requestId)).data.requestId == requestId
+            && getAfter(/databases/$(database)/documents/trainingSessions/$(requestId)).data.status == "planned"
+            && getAfter(/databases/$(database)/documents/relations/$(canonicalPairId(resource.data.senderId, resource.data.receiverId))).data.members.hasAll([resource.data.senderId, resource.data.receiverId])
+            && getAfter(/databases/$(database)/documents/chats/$(canonicalPairId(resource.data.senderId, resource.data.receiverId))).data.relationId == canonicalPairId(resource.data.senderId, resource.data.receiverId)
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    match /relations/{pairId} {
+      allow get: if signedIn() && (
+        resource == null
+          ? pairContainsUid(pairId, request.auth.uid)
+          : request.auth.uid in resource.data.members
+      );
+
+      allow list: if signedIn() && request.auth.uid in resource.data.members;
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(relationKeys())
+        && relationShapeIsValid(pairId, request.resource.data)
+        && relationMatchesSource(
+          request.resource.data,
+          requestAfter(request.resource.data.sourceRequestId)
+        )
+        && gymExists(request.resource.data.gymId)
+        && profileGym(request.resource.data.members[0]) == request.resource.data.gymId
+        && profileGym(request.resource.data.members[1]) == request.resource.data.gymId;
+
+      allow update, delete: if false;
+    }
+
+    match /chats/{pairId} {
+      allow get: if signedIn() && (
+        resource == null
+          ? pairContainsUid(pairId, request.auth.uid)
+          : request.auth.uid in resource.data.members
+      );
+
+      allow list: if signedIn() && request.auth.uid in resource.data.members;
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(chatKeys())
+        && existsAfter(/databases/$(database)/documents/relations/$(pairId))
+        && chatMatchesRelation(
+          pairId,
+          request.resource.data,
+          getAfter(/databases/$(database)/documents/relations/$(pairId)).data,
+          requestAfter(getAfter(/databases/$(database)/documents/relations/$(pairId)).data.sourceRequestId)
+        );
+
+      allow update, delete: if false;
+    }
+
+    match /trainingSessions/{requestId} {
+      allow get: if signedIn() && (
+        resource == null
+          ? (
+            exists(/databases/$(database)/documents/trainingRequests/$(requestId))
+            && (
+              requestData(requestId).senderId == request.auth.uid
+              || requestData(requestId).receiverId == request.auth.uid
+            )
+          )
+          : request.auth.uid in resource.data.members
+      );
+
+      allow list: if signedIn() && request.auth.uid in resource.data.members;
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(sessionKeys())
+        && request.resource.data.requestId == requestId
+        && sessionMatchesRequest(request.resource.data, requestAfter(requestId))
+        && existsAfter(/databases/$(database)/documents/relations/$(request.resource.data.relationId))
+        && existsAfter(/databases/$(database)/documents/chats/$(request.resource.data.relationId));
+
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.members
+        && resource.data.status == "planned"
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["status", "updatedAt"])
+        && (
+          request.resource.data.status == "cancelled"
+          || (
+            request.resource.data.status == "done"
+            && resource.data.endsAt < request.time
+          )
+        );
 
       allow delete: if false;
     }

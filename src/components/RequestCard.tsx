@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { RequestStatus } from "@/types/trainingRequest";
 
@@ -15,6 +15,11 @@ type RequestCardProps = {
   hours: string;
   status: RequestStatus;
   message?: string;
+  canRespond?: boolean;
+  slotPassed?: boolean;
+  responding?: boolean;
+  onAccept?: () => void;
+  onReject?: () => void;
 };
 
 export function RequestCard({
@@ -24,6 +29,11 @@ export function RequestCard({
   hours,
   status,
   message,
+  canRespond = false,
+  slotPassed = false,
+  responding = false,
+  onAccept,
+  onReject,
 }: RequestCardProps) {
   return (
     <View style={styles.card}>
@@ -35,6 +45,30 @@ export function RequestCard({
       <Text style={styles.line}>{date}</Text>
       <Text style={styles.line}>{hours}</Text>
       {message ? <Text style={styles.message}>{message}</Text> : null}
+      {canRespond && slotPassed ? (
+        <Text style={styles.hint}>
+          Ce créneau est passé. Tu peux refuser la demande. Un autre horaire demande une nouvelle
+          proposition.
+        </Text>
+      ) : null}
+      {canRespond ? (
+        <View style={styles.actions}>
+          {responding ? (
+            <ActivityIndicator color="#3C87F7" />
+          ) : (
+            <>
+              {slotPassed ? null : (
+                <Pressable style={styles.accept} onPress={onAccept}>
+                  <Text style={styles.acceptText}>Accepter</Text>
+                </Pressable>
+              )}
+              <Pressable style={styles.reject} onPress={onReject}>
+                <Text style={styles.rejectText}>Refuser</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -94,5 +128,47 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: "#1F2937",
     lineHeight: 20,
+  },
+
+  hint: {
+    marginTop: 12,
+    color: "#92400E",
+    lineHeight: 20,
+  },
+
+  actions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 16,
+  },
+
+  accept: {
+    flex: 1,
+    backgroundColor: "#3C87F7",
+    borderRadius: 12,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  acceptText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+
+  reject: {
+    flex: 1,
+    borderRadius: 12,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    backgroundColor: "#FFFFFF",
+  },
+
+  rejectText: {
+    color: "#B91C1C",
+    fontWeight: "700",
   },
 });
