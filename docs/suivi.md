@@ -147,7 +147,7 @@ La photo et Storage restent en attente d'un forfait Firebase. Le rappel est prog
 
 ## Calendrier
 
-**Au calendrier** ajoute la séance planifiée dans le calendrier du téléphone. L'accès est demandé seulement après l'appui. Une séance déjà ajoutée n'est pas dupliquée. Annuler la séance retire aussi cet événement. Sur le navigateur, le bouton indique que l'ajout se fait sur le téléphone.
+**Au calendrier** ajoute la séance planifiée dans le calendrier du téléphone. L'accès est demandé seulement après l'appui. Une séance déjà ajoutée n'est pas dupliquée. Annuler la séance retire aussi cet événement. Sur le navigateur, le bouton indique que l'ajout se fait sur le téléphone. Si Android recharge l'application au moment de l'autorisation, l'événement est ajouté au retour sur Séances. Dans Expo Go, le canal « Rappels » peut être indisponible : le rappel est alors programmé sur le canal par défaut.
 
 
 

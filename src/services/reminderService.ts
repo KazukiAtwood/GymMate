@@ -15,15 +15,28 @@ export function reminderKey(uid: string, sessionId: string) {
   return `reminder:${uid}:${sessionId}`;
 }
 
+function isMissingChannelProvider(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("NotificationsChannelsProvider");
+}
+
 async function ensureSportChannel() {
   if (Platform.OS !== "android") {
-    return;
+    return false;
   }
 
-  await Notifications.setNotificationChannelAsync("sport", {
-    name: "Rappels",
-    importance: Notifications.AndroidImportance.DEFAULT,
-  });
+  try {
+    await Notifications.setNotificationChannelAsync("sport", {
+      name: "Rappels",
+      importance: Notifications.AndroidImportance.DEFAULT,
+    });
+    return true;
+  } catch (error) {
+    if (!isMissingChannelProvider(error)) {
+      console.error("Erreur de création du canal de rappel :", error);
+    }
+    return false;
+  }
 }
 
 async function dropScheduledReminder(notificationId: string) {
@@ -56,7 +69,7 @@ export async function scheduleSessionReminder(
     );
   }
 
-  await ensureSportChannel();
+  const sportChannelReady = await ensureSportChannel();
   const permission = await Notifications.requestPermissionsAsync();
 
   if (!permission.granted) {
@@ -76,7 +89,7 @@ export async function scheduleSessionReminder(
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: when,
-      channelId: "sport",
+      ...(sportChannelReady ? { channelId: "sport" } : {}),
     },
   });
 

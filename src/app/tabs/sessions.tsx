@@ -24,6 +24,7 @@ import {
     CalendarServiceError,
     getSessionCalendarEventId,
     removeSessionFromCalendar,
+    resumePendingCalendarEvent,
 } from "@/services/calendarService";
 import {
     cancelSessionReminder,
@@ -147,8 +148,45 @@ export default function SessionsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void loadSessions();
-    }, [loadSessions]),
+      let active = true;
+
+      void (async () => {
+        await loadSessions();
+
+        if (!user || !active) {
+          return;
+        }
+
+        try {
+          const result = await resumePendingCalendarEvent(user.uid);
+
+          if (!active || result.status === "none") {
+            return;
+          }
+
+          setCalendarIds((current) => ({ ...current, [result.sessionId]: result.eventId }));
+
+          if (result.status === "created") {
+            setActionNotice("Séance ajoutée au calendrier.");
+          }
+        } catch (calendarError) {
+          if (!active) {
+            return;
+          }
+
+          console.error("Erreur d'ajout au calendrier :", calendarError);
+          setActionError(
+            calendarError instanceof CalendarServiceError
+              ? calendarError.message
+              : "La séance n'a pas pu être ajoutée au calendrier. Réessaie.",
+          );
+        }
+      })();
+
+      return () => {
+        active = false;
+      };
+    }, [loadSessions, user]),
   );
 
   async function updateSession(sessionId: string, action: "cancel" | "complete") {
@@ -260,20 +298,16 @@ export default function SessionsScreen() {
         timeZone: session.timeZone || "Europe/Paris",
       });
 
-      if (result === "already") {
-        const eventId = await getSessionCalendarEventId(user.uid, session.id);
-        if (eventId) {
-          setCalendarIds((current) => ({ ...current, [session.id]: eventId }));
-        }
-        setActionNotice("Cette séance est déjà dans ton calendrier.");
+      if (result.status === "none") {
         return;
       }
 
-      const eventId = await getSessionCalendarEventId(user.uid, session.id);
-      if (eventId) {
-        setCalendarIds((current) => ({ ...current, [session.id]: eventId }));
-      }
-      setActionNotice("Séance ajoutée au calendrier.");
+      setCalendarIds((current) => ({ ...current, [result.sessionId]: result.eventId }));
+      setActionNotice(
+        result.status === "already"
+          ? "Cette séance est déjà dans ton calendrier."
+          : "Séance ajoutée au calendrier.",
+      );
     } catch (calendarError) {
       console.error("Erreur d'ajout au calendrier :", calendarError);
       setActionError(
