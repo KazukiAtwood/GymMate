@@ -55,3 +55,19 @@ Vérification TypeScript (`npx tsc --noEmit`).
 ### Difficulté
 
 Les règles du J5 refusaient encore tout `gymId` non nul. Elles sont mises à jour dans `firestore.rules` et doivent être republiées avant le choix de salle.
+
+## J7 · Demander
+
+Envoi d'une demande d'entraînement et listes reçues / envoyées.
+
+### Ce qui fonctionne
+
+- Depuis la fiche d'un membre de la même salle, on propose un sport, une date et un créneau.
+- Le document `trainingRequests` est créé avec le statut `pending`, les deux participants et `timeZone: Europe/Paris`.
+- Une nouvelle tentative du même envoi réutilise le même identifiant.
+- L'onglet Demandes sépare Reçues et Envoyées, avec le badge En attente, Acceptée ou Refusée.
+- Les règles n'autorisent la lecture qu'aux deux participants. Accepter ou refuser reste le J8.
+
+### Test à faire
+
+Après publication des règles : Patrick propose à Sami Musculation demain de 18:00 à 19:00. La demande apparaît dans Envoyées chez Patrick et dans Reçues chez Sami. Une date passée est refusée. Un deuxième appui ne crée pas une deuxième demande.

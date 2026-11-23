@@ -1,7 +1,7 @@
 rules_version = '2';
 
-// J6 : lecture du propriétaire ou des membres de la même salle.
-// Le gymId passe une seule fois de null à une salle existante.
+// J7 : une demande est lisible par ses deux participants.
+// Seul l'expéditeur peut la créer, avec le statut pending.
 // Les nombres ci-dessous suivent src/utils/profileValidation.ts.
 
 service cloud.firestore {
@@ -168,6 +168,80 @@ service cloud.firestore {
                 .hasOnly(["gymId", "updatedAt"])
           )
         );
+
+      allow delete: if false;
+    }
+
+    function requestKeys() {
+      return [
+        "senderId",
+        "receiverId",
+        "members",
+        "gymId",
+        "sport",
+        "startsAt",
+        "endsAt",
+        "timeZone",
+        "message",
+        "status",
+        "createdAt",
+        "respondedAt"
+      ];
+    }
+
+    function profileGym(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data.gymId;
+    }
+
+    match /trainingRequests/{requestId} {
+      allow read: if signedIn()
+        && (
+          resource.data.senderId == request.auth.uid
+          || resource.data.receiverId == request.auth.uid
+        );
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(requestKeys())
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.receiverId is string
+        && request.resource.data.receiverId.size() > 0
+        && request.resource.data.receiverId != request.auth.uid
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && request.resource.data.members.hasAll([
+          request.resource.data.senderId,
+          request.resource.data.receiverId
+        ])
+        && request.resource.data.members.hasOnly([
+          request.resource.data.senderId,
+          request.resource.data.receiverId
+        ])
+        && request.resource.data.gymId is string
+        && request.resource.data.gymId.matches('^[A-Za-z0-9_]+$')
+        && gymExists(request.resource.data.gymId)
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && exists(/databases/$(database)/documents/users/$(request.resource.data.receiverId))
+        && profileGym(request.auth.uid) == request.resource.data.gymId
+        && profileGym(request.resource.data.receiverId) == request.resource.data.gymId
+        && request.resource.data.sport in allowedSports()
+        && request.resource.data.startsAt is timestamp
+        && request.resource.data.endsAt is timestamp
+        && request.resource.data.startsAt > request.time
+        && request.resource.data.endsAt > request.resource.data.startsAt
+        && request.resource.data.timeZone == "Europe/Paris"
+        && request.resource.data.message is string
+        && request.resource.data.message.size() <= 500
+        && request.resource.data.status == "pending"
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.respondedAt == null;
+
+      allow update: if signedIn()
+        && request.auth.uid == resource.data.receiverId
+        && resource.data.status == "pending"
+        && request.resource.data.status in ["accepted", "rejected"]
+        && request.resource.data.respondedAt == request.time
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["status", "respondedAt"]);
 
       allow delete: if false;
     }

@@ -45,6 +45,7 @@ function RootNavigator() {
         <Stack.Screen name="profile" />
         <Stack.Screen name="gym" />
         <Stack.Screen name="members/[userId]" />
+        <Stack.Screen name="requests/new" />
         <Stack.Screen name="explore" />
       </Stack.Protected>
     </Stack>

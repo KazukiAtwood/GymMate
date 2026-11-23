@@ -25,7 +25,7 @@ export default function MemberDetailsScreen() {
     userId: string;
   }>();
   const router = useRouter();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [member, setMember] = useState<SportProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,6 +125,20 @@ export default function MemberDetailsScreen() {
               {formatMinutes(slot.end)}
             </Text>
           ))}
+
+          {user && member.id !== user.uid ? (
+            <Pressable
+              style={styles.button}
+              onPress={() =>
+                router.push({
+                  pathname: "/requests/new",
+                  params: { receiverId: member.id },
+                })
+              }
+            >
+              <Text style={styles.buttonText}>Proposer un entraînement</Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
     </ScrollView>
@@ -192,5 +206,19 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: "#6B7280",
     lineHeight: 22,
+  },
+
+  button: {
+    marginTop: 28,
+    backgroundColor: "#3C87F7",
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+
+  buttonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });
