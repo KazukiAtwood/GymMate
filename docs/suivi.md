@@ -128,9 +128,26 @@ SQY est placée à 48,77 / 2,08 et Paris à 48,86 / 2,35. Une salle sans coordon
 2. Mesurer une position exactement sur SQY : Campus Gym SQY arrive en tête, à 0 km.
 3. Confirmer une autre salle que la plus proche : c'est ce choix qui est enregistré.
 
+## Atelier 4 et 5 · Photo locale
+
+La photo n'est pas envoyée à Firebase. Elle est copiée dans les fichiers de l'application, sous `avatars/{uid}/photo.jpg` ou `photo.png`, et le chemin est gardé sur le téléphone.
+
+### Ce qui fonctionne
+
+- **Prendre une photo** et **Galerie** demandent l'accès seulement après l'appui.
+- L'aperçu s'affiche avant l'enregistrement. **Annuler**, ou annuler la galerie, garde la photo déjà enregistrée.
+- Seules les images JPEG ou PNG de 3 Mo au plus sont acceptées.
+- Si la copie réussit mais que le chemin n'est pas retenu, **Confirmer** réessaie seulement cette liaison.
+
+### Test à faire
+
+1. Choisir une photo, annuler : l'ancienne photo reste.
+2. Confirmer une photo, quitter le profil, revenir : elle est toujours là.
+3. Refuser l'appareil photo : le message propose la galerie.
+
 ## Atelier 6 et 7 · Rappel local
 
-La photo et Storage restent en attente d'un forfait Firebase. Le rappel est programmé sur le téléphone, pas dans Firestore.
+Le rappel est programmé sur le téléphone, pas dans Firestore.
 
 ### Ce qui fonctionne
 

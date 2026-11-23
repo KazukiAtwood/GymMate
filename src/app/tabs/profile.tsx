@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { dayLabel, formatMinutes, levelLabel } from "@/constants/profileOptions";
+import { ProfilePhotoEditor } from "@/components/ProfilePhotoEditor";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubmitLock } from "@/hooks/useSubmitLock";
 import { logoutAccount } from "@/services/authService";
@@ -60,6 +61,9 @@ export default function ProfileTab() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{profile?.displayName || "Mon profil"}</Text>
       {user?.email ? <Text style={styles.account}>{user.email}</Text> : null}
+      {user ? (
+        <ProfilePhotoEditor uid={user.uid} displayName={profile?.displayName ?? ""} />
+      ) : null}
       {profile?.gymId ? (
         <Pressable
           onPress={() =>
