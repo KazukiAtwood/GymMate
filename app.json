@@ -32,6 +32,33 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "GymMate utilise ta position pour indiquer où tu te trouves."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GymMate accède à tes photos pour choisir un avatar.",
+          "cameraPermission": "GymMate utilise l'appareil photo pour ton avatar.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#3C87F7"
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "GymMate ajoute tes séances à ton calendrier.",
+          "remindersPermission": false
+        }
       ]
     ],
     "experiments": {

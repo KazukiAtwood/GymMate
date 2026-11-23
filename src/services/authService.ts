@@ -5,6 +5,7 @@ import { mapAuthError } from "@/utils/authErrors";
 
 import { auth } from "./firebase";
 import { createInitialProfile } from "./profileService";
+import { clearAccountReminders } from "./reminderService";
 
 export class AuthServiceError extends Error {
   constructor(message: string) {
@@ -62,5 +63,15 @@ export async function loginAccount(email: string, password: string) {
 }
 
 export async function logoutAccount() {
+  const uid = auth.currentUser?.uid;
+
+  if (uid) {
+    try {
+      await clearAccountReminders(uid);
+    } catch (error) {
+      console.error("Erreur de nettoyage des rappels :", error);
+    }
+  }
+
   await signOut(auth);
 }

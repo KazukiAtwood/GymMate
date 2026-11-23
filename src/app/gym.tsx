@@ -1,4 +1,5 @@
-import { Redirect, useRouter } from "expo-router";
+import * as Location from "expo-location";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -16,10 +17,13 @@ import { logoutAccount } from "@/services/authService";
 import { chooseGym, listGyms } from "@/services/gymService";
 import { profileWriteErrorMessage } from "@/services/profileService";
 import type { Gym } from "@/types/gym";
+import { distanceKm, formatBirdDistance } from "@/utils/distance";
 import { isProfileReady } from "@/utils/profileValidation";
 
 export default function GymScreen() {
   const router = useRouter();
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const showingPosition = mode === "position";
   const { user, profile, refreshProfile } = useAuth();
   const { pending, run } = useSubmitLock();
   const [gyms, setGyms] = useState<Gym[]>([]);
@@ -28,6 +32,9 @@ export default function GymScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [position, setPosition] = useState<Location.LocationObjectCoords | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationInfo, setLocationInfo] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -66,21 +73,44 @@ export default function GymScreen() {
     return <Redirect href="/profile" />;
   }
 
-  if (profile?.gymId) {
+  if (profile?.gymId && !showingPosition) {
     return <Redirect href="/tabs/discover" />;
   }
 
   const normalizedSearch = search.trim().toLocaleLowerCase("fr");
-  const visibleGyms = gyms.filter((gym) => {
-    if (!normalizedSearch) {
-      return true;
-    }
+  const visibleGyms = gyms
+    .filter((gym) => {
+      if (!normalizedSearch) {
+        return true;
+      }
 
-    return (
-      gym.name.toLocaleLowerCase("fr").includes(normalizedSearch) ||
-      gym.city.toLocaleLowerCase("fr").includes(normalizedSearch)
-    );
-  });
+      return (
+        gym.name.toLocaleLowerCase("fr").includes(normalizedSearch) ||
+        gym.city.toLocaleLowerCase("fr").includes(normalizedSearch)
+      );
+    })
+    .map((gym) => ({
+      ...gym,
+      distanceKm:
+        position && gym.latitude !== null && gym.longitude !== null
+          ? distanceKm(position.latitude, position.longitude, gym.latitude, gym.longitude)
+          : null,
+    }))
+    .sort((left, right) => {
+      if (left.distanceKm === null && right.distanceKm === null) {
+        return left.name.localeCompare(right.name, "fr");
+      }
+
+      if (left.distanceKm === null) {
+        return 1;
+      }
+
+      if (right.distanceKm === null) {
+        return -1;
+      }
+
+      return left.distanceKm - right.distanceKm;
+    });
 
   function handleConfirm() {
     if (!user || !selectedGym) {
@@ -119,12 +149,39 @@ export default function GymScreen() {
     }
   }
 
+  async function useMyPosition() {
+    setLocating(true);
+    setLocationInfo(null);
+
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+
+      if (!permission.granted) {
+        setPosition(null);
+        setLocationInfo("Recherchez par ville.");
+        return;
+      }
+
+      const nextPosition = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      setPosition(nextPosition.coords);
+    } catch (locationError) {
+      console.error("Erreur de localisation :", locationError);
+      setPosition(null);
+      setLocationInfo("La position est indisponible. Recherchez par ville.");
+    } finally {
+      setLocating(false);
+    }
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Choisir une salle</Text>
       <Text style={styles.subtitle}>
-        La salle reste fixe dans cette version. Tu verras ensuite les membres
-        de cette salle.
+        {profile?.gymId
+          ? "Ta salle est déjà choisie. Tu peux mesurer ta position ou rechercher par ville."
+          : "La salle reste fixe dans cette version. Tu verras ensuite les membres de cette salle."}
       </Text>
 
       <TextInput
@@ -135,6 +192,28 @@ export default function GymScreen() {
         autoCorrect={false}
         style={styles.search}
       />
+
+      <Pressable
+        style={[styles.secondaryButton, styles.locationButton, locating && styles.buttonDisabled]}
+        onPress={() => void useMyPosition()}
+        disabled={locating}
+      >
+        <Text style={styles.secondaryButtonText}>
+          {locating ? "Localisation..." : "Utiliser ma position"}
+        </Text>
+      </Pressable>
+      {position ? (
+        <Text style={styles.locationText}>
+          Latitude {position.latitude.toFixed(5)}, longitude {position.longitude.toFixed(5)}
+          {typeof position.accuracy === "number"
+            ? `, précision ${Math.round(position.accuracy)} m`
+            : ""}
+          .
+          {" "}
+          Classement indicatif, à vol d'oiseau.
+        </Text>
+      ) : null}
+      {locationInfo ? <Text style={styles.locationText}>{locationInfo}</Text> : null}
 
       {loading ? (
         <View style={styles.centered}>
@@ -177,13 +256,16 @@ export default function GymScreen() {
                 {item.address ? (
                   <Text style={styles.cardText}>{item.address}</Text>
                 ) : null}
+                {item.distanceKm !== null ? (
+                  <Text style={styles.distance}>{formatBirdDistance(item.distanceKm)}</Text>
+                ) : null}
               </Pressable>
             );
           }}
         />
       )}
 
-      {selectedGym ? (
+      {selectedGym && !profile?.gymId ? (
         <View style={styles.confirmation}>
           <Text style={styles.confirmationText}>
             Confirmer {selectedGym.name} à {selectedGym.city} ? Ce choix ne
@@ -242,6 +324,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontSize: 15,
+  },
+
+  locationButton: {
+    marginTop: 12,
+    alignItems: "center",
+  },
+
+  locationText: {
+    marginTop: 8,
+    color: "#4B5563",
+    lineHeight: 20,
+  },
+
+  distance: {
+    marginTop: 8,
+    color: "#1E40AF",
+    fontWeight: "700",
   },
 
   list: {

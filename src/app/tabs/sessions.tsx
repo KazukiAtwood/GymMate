@@ -19,6 +19,18 @@ import {
     listSessions,
     SessionServiceError,
 } from "@/services/sessionService";
+import {
+    addSessionToCalendar,
+    CalendarServiceError,
+    getSessionCalendarEventId,
+    removeSessionFromCalendar,
+} from "@/services/calendarService";
+import {
+    cancelSessionReminder,
+    getSessionReminderId,
+    ReminderServiceError,
+    scheduleSessionReminder,
+} from "@/services/reminderService";
 import type { TrainingSession } from "@/types/trainingSession";
 import { readErrorCode } from "@/utils/errorCode";
 import { isProfileReady } from "@/utils/profileValidation";
@@ -35,7 +47,12 @@ export default function SessionsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [reminderIds, setReminderIds] = useState<Record<string, string>>({});
+  const [reminderPendingId, setReminderPendingId] = useState<string | null>(null);
+  const [calendarIds, setCalendarIds] = useState<Record<string, string>>({});
+  const [calendarPendingId, setCalendarPendingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const loadSessions = useCallback(async (silent = false) => {
     if (!user) {
@@ -86,6 +103,33 @@ export default function SessionsScreen() {
       setSessions(nextSessions);
       setNames(Object.fromEntries(partnerNames));
       setGyms(Object.fromEntries(gymNames));
+
+      const [storedReminders, storedCalendarEvents] = await Promise.all([
+        Promise.all(
+          nextSessions.map(async (session) => {
+            const reminderId = await getSessionReminderId(user.uid, session.id);
+            return [session.id, reminderId] as const;
+          }),
+        ),
+        Promise.all(
+          nextSessions.map(async (session) => {
+            const eventId = await getSessionCalendarEventId(user.uid, session.id);
+            return [session.id, eventId] as const;
+          }),
+        ),
+      ]);
+      setReminderIds(
+        Object.fromEntries(
+          storedReminders.filter((entry): entry is readonly [string, string] => Boolean(entry[1])),
+        ),
+      );
+      setCalendarIds(
+        Object.fromEntries(
+          storedCalendarEvents.filter((entry): entry is readonly [string, string] =>
+            Boolean(entry[1]),
+          ),
+        ),
+      );
     } catch (loadError) {
       console.error("Erreur de lecture des séances :", loadError);
       const code = readErrorCode(loadError);
@@ -114,12 +158,37 @@ export default function SessionsScreen() {
 
     setPendingId(sessionId);
     setActionError(null);
+    setActionNotice(null);
 
     try {
       if (action === "cancel") {
         await cancelSession(sessionId, user.uid);
       } else {
         await completeSession(sessionId, user.uid);
+      }
+
+      try {
+        await cancelSessionReminder(user.uid, sessionId);
+        setReminderIds((current) => {
+          const next = { ...current };
+          delete next[sessionId];
+          return next;
+        });
+      } catch (reminderError) {
+        console.error("Erreur d'annulation du rappel :", reminderError);
+      }
+
+      if (action === "cancel") {
+        try {
+          await removeSessionFromCalendar(user.uid, sessionId);
+          setCalendarIds((current) => {
+            const next = { ...current };
+            delete next[sessionId];
+            return next;
+          });
+        } catch (calendarError) {
+          console.error("Erreur de retrait du calendrier :", calendarError);
+        }
       }
 
       await loadSessions(true);
@@ -132,6 +201,88 @@ export default function SessionsScreen() {
       );
     } finally {
       setPendingId(null);
+    }
+  }
+
+  async function changeReminder(sessionId: string, startsAt: Date, scheduled: boolean) {
+    if (!user || reminderPendingId) {
+      return;
+    }
+
+    setReminderPendingId(sessionId);
+    setActionError(null);
+    setActionNotice(null);
+
+    try {
+      if (scheduled) {
+        await cancelSessionReminder(user.uid, sessionId);
+        setReminderIds((current) => {
+          const next = { ...current };
+          delete next[sessionId];
+          return next;
+        });
+        setActionNotice("Rappel annulé.");
+      } else {
+        const reminderId = await scheduleSessionReminder(user.uid, sessionId, startsAt);
+        setReminderIds((current) => ({ ...current, [sessionId]: reminderId }));
+        setActionNotice("Rappel programmé 15 minutes avant la séance.");
+      }
+    } catch (reminderError) {
+      console.error("Erreur de rappel :", reminderError);
+      setActionError(
+        reminderError instanceof ReminderServiceError
+          ? reminderError.message
+          : "Le rappel n'a pas pu être modifié. Réessaie.",
+      );
+    } finally {
+      setReminderPendingId(null);
+    }
+  }
+
+  async function addToCalendar(session: TrainingSession, partnerName: string, gymName: string) {
+    if (!user || !session.startsAt || !session.endsAt || calendarPendingId) {
+      return;
+    }
+
+    setCalendarPendingId(session.id);
+    setActionError(null);
+    setActionNotice(null);
+
+    try {
+      const result = await addSessionToCalendar({
+        uid: user.uid,
+        sessionId: session.id,
+        title: `Entraînement ${session.sport}`,
+        location: gymName,
+        notes: `Avec ${partnerName}`,
+        startsAt: session.startsAt.toDate(),
+        endsAt: session.endsAt.toDate(),
+        timeZone: session.timeZone || "Europe/Paris",
+      });
+
+      if (result === "already") {
+        const eventId = await getSessionCalendarEventId(user.uid, session.id);
+        if (eventId) {
+          setCalendarIds((current) => ({ ...current, [session.id]: eventId }));
+        }
+        setActionNotice("Cette séance est déjà dans ton calendrier.");
+        return;
+      }
+
+      const eventId = await getSessionCalendarEventId(user.uid, session.id);
+      if (eventId) {
+        setCalendarIds((current) => ({ ...current, [session.id]: eventId }));
+      }
+      setActionNotice("Séance ajoutée au calendrier.");
+    } catch (calendarError) {
+      console.error("Erreur d'ajout au calendrier :", calendarError);
+      setActionError(
+        calendarError instanceof CalendarServiceError
+          ? calendarError.message
+          : "La séance n'a pas pu être ajoutée au calendrier. Réessaie.",
+      );
+    } finally {
+      setCalendarPendingId(null);
     }
   }
 
@@ -174,6 +325,7 @@ export default function SessionsScreen() {
           </Text>
         </Pressable>
       </View>
+      {actionNotice ? <Text style={styles.notice}>{actionNotice}</Text> : null}
       {actionError ? <Text style={styles.actionError}>{actionError}</Text> : null}
 
       {loading ? (
@@ -207,6 +359,9 @@ export default function SessionsScreen() {
                 ? formatRequestSlot(item.startsAt.toDate(), item.endsAt.toDate())
                 : null;
 
+            const startsAt = item.startsAt?.toDate() ?? null;
+            const upcoming = Boolean(startsAt && startsAt.getTime() > Date.now());
+
             return (
               <SessionCard
                 partnerName={names[partnerId] ?? "Membre"}
@@ -217,8 +372,32 @@ export default function SessionsScreen() {
                 status={item.status}
                 canComplete={Boolean(item.endsAt && item.endsAt.toMillis() < Date.now())}
                 pending={pendingId === item.id}
+                reminderScheduled={Boolean(reminderIds[item.id])}
+                reminderPending={reminderPendingId === item.id}
                 onCancel={() => void updateSession(item.id, "cancel")}
                 onComplete={() => void updateSession(item.id, "complete")}
+                onScheduleReminder={
+                  upcoming && startsAt
+                    ? () => void changeReminder(item.id, startsAt, false)
+                    : undefined
+                }
+                onCancelReminder={
+                  upcoming && startsAt
+                    ? () => void changeReminder(item.id, startsAt, true)
+                    : undefined
+                }
+                calendarAdded={Boolean(calendarIds[item.id])}
+                calendarPending={calendarPendingId === item.id}
+                onAddToCalendar={
+                  item.startsAt && item.endsAt
+                    ? () =>
+                        void addToCalendar(
+                          item,
+                          names[partnerId] ?? "Membre",
+                          gyms[item.gymId] ?? item.gymId,
+                        )
+                    : undefined
+                }
               />
             );
           }}
@@ -277,6 +456,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: "#991B1B",
     backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    padding: 12,
+    lineHeight: 20,
+  },
+
+  notice: {
+    marginBottom: 12,
+    color: "#1E40AF",
+    backgroundColor: "#E0ECFF",
     borderRadius: 12,
     padding: 12,
     lineHeight: 20,

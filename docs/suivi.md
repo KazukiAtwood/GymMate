@@ -99,3 +99,55 @@ Après republication de `firestore.rules` :
 ### Difficulté
 
 Les règles doivent être republiées. L'envoi des messages du chat reste le J9 : la conversation s'ouvre et n'a pas encore de saisie.
+
+## Atelier 1 et 2 · Téléphone et position
+
+Les modules `expo-location`, `expo-image-picker`, `expo-notifications` et `expo-file-system` sont installés. Les textes de permission sont dans `app.json`. Aucune demande d'accès n'est lancée à l'ouverture.
+
+### Ce qui fonctionne
+
+- Le choix de salle garde la recherche par nom ou ville.
+- **Utiliser ma position** demande l'accès seulement après l'appui.
+- Si l'accès est refusé, le message indique de rechercher par ville et le bouton redevient utilisable.
+- Si la mesure réussit, la latitude, la longitude et la précision s'affichent.
+
+## Atelier 3 · Salles par proximité
+
+SQY est placée à 48,77 / 2,08 et Paris à 48,86 / 2,35. Une salle sans coordonnées reste dans la liste.
+
+### Ce qui fonctionne
+
+- Avec une position, une copie du catalogue est triée par distance à vol d'oiseau.
+- La distance affichée est arrondie au kilomètre.
+- Sans position, les salles restent dans l'ordre alphabétique et la recherche par ville fonctionne.
+- La salle la plus proche n'est pas choisie toute seule : la confirmation reste manuelle.
+
+### Test à faire
+
+1. Sans position, chercher Guyancourt : les salles restent consultables.
+2. Mesurer une position exactement sur SQY : Campus Gym SQY arrive en tête, à 0 km.
+3. Confirmer une autre salle que la plus proche : c'est ce choix qui est enregistré.
+
+## Atelier 6 et 7 · Rappel local
+
+La photo et Storage restent en attente d'un forfait Firebase. Le rappel est programmé sur le téléphone, pas dans Firestore.
+
+### Ce qui fonctionne
+
+- **Me rappeler** demande l'accès aux notifications seulement après l'appui.
+- Le rappel est placé 15 minutes avant le début. Une échéance déjà passée est refusée.
+- L'identifiant est gardé sur l'appareil dans `reminder:{uid}:{sessionId}`.
+- **Annuler le rappel** retire cet identifiant. Annuler la séance ou se déconnecter retire les rappels de ce compte, pas les autres.
+- Au premier plan, la notification peut s'afficher. Elle n'arrive pas sur l'autre téléphone.
+
+### Test à faire
+
+1. Programmer un rappel sur une séance future, mettre l'application en arrière-plan.
+2. Annuler le rappel avant l'heure : il ne doit plus être programmé.
+
+## Calendrier
+
+**Au calendrier** ajoute la séance planifiée dans le calendrier du téléphone. L'accès est demandé seulement après l'appui. Une séance déjà ajoutée n'est pas dupliquée. Annuler la séance retire aussi cet événement. Sur le navigateur, le bouton indique que l'ajout se fait sur le téléphone.
+
+
+

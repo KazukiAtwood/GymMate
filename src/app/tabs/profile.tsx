@@ -60,6 +60,15 @@ export default function ProfileTab() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{profile?.displayName || "Mon profil"}</Text>
       {user?.email ? <Text style={styles.account}>{user.email}</Text> : null}
+      {profile?.gymId ? (
+        <Pressable
+          onPress={() =>
+            router.push({ pathname: "/gym", params: { mode: "position" } })
+          }
+        >
+          <Text style={styles.link}>Utiliser ma position</Text>
+        </Pressable>
+      ) : null}
 
       <View style={styles.card}>
         <Text style={styles.line}>Ville : {profile?.city}</Text>
@@ -124,6 +133,12 @@ const styles = StyleSheet.create({
   account: {
     marginTop: 6,
     color: "#6B7280",
+  },
+
+  link: {
+    marginTop: 16,
+    color: "#3C87F7",
+    fontWeight: "700",
   },
 
   card: {

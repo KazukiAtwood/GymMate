@@ -1,12 +1,20 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { logoutAccount } from "@/services/authService";
 
 export default function RootLayout() {
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      return;
+    }
+
+    void import("@/services/notificationSetup");
+  }, []);
+
   return (
     <AuthProvider>
       <StatusBar style="dark" />

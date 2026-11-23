@@ -17,8 +17,15 @@ type SessionCardProps = {
   status: SessionStatus;
   canComplete?: boolean;
   pending?: boolean;
+  reminderScheduled?: boolean;
+  reminderPending?: boolean;
+  calendarAdded?: boolean;
+  calendarPending?: boolean;
   onCancel?: () => void;
   onComplete?: () => void;
+  onScheduleReminder?: () => void;
+  onCancelReminder?: () => void;
+  onAddToCalendar?: () => void;
 };
 
 export function SessionCard({
@@ -30,8 +37,15 @@ export function SessionCard({
   status,
   canComplete = false,
   pending = false,
+  reminderScheduled = false,
+  reminderPending = false,
+  calendarAdded = false,
+  calendarPending = false,
   onCancel,
   onComplete,
+  onScheduleReminder,
+  onCancelReminder,
+  onAddToCalendar,
 }: SessionCardProps) {
   return (
     <View style={styles.card}>
@@ -47,7 +61,7 @@ export function SessionCard({
         <View style={styles.actions}>
           <Pressable
             style={[styles.secondary, pending && styles.disabled]}
-            disabled={pending}
+            disabled={pending || reminderPending || calendarPending}
             onPress={onCancel}
           >
             {pending ? (
@@ -59,10 +73,43 @@ export function SessionCard({
           {canComplete ? (
             <Pressable
               style={[styles.primary, pending && styles.disabled]}
-              disabled={pending}
+              disabled={pending || reminderPending || calendarPending}
               onPress={onComplete}
             >
               <Text style={styles.primaryText}>Terminer</Text>
+            </Pressable>
+          ) : null}
+          {onScheduleReminder || onCancelReminder ? (
+            <Pressable
+              style={[styles.secondary, (pending || reminderPending || calendarPending) && styles.disabled]}
+              disabled={pending || reminderPending || calendarPending}
+              onPress={reminderScheduled ? onCancelReminder : onScheduleReminder}
+            >
+              {reminderPending ? (
+                <ActivityIndicator color="#1F2937" />
+              ) : (
+                <Text style={styles.secondaryText}>
+                  {reminderScheduled ? "Annuler le rappel" : "Me rappeler"}
+                </Text>
+              )}
+            </Pressable>
+          ) : null}
+          {onAddToCalendar ? (
+            <Pressable
+              style={[
+                styles.secondary,
+                (pending || reminderPending || calendarPending || calendarAdded) && styles.disabled,
+              ]}
+              disabled={pending || reminderPending || calendarPending || calendarAdded}
+              onPress={onAddToCalendar}
+            >
+              {calendarPending ? (
+                <ActivityIndicator color="#1F2937" />
+              ) : (
+                <Text style={styles.secondaryText}>
+                  {calendarAdded ? "Dans le calendrier" : "Au calendrier"}
+                </Text>
+              )}
             </Pressable>
           ) : null}
         </View>
@@ -124,6 +171,7 @@ const styles = StyleSheet.create({
 
   actions: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     marginTop: 16,
   },
