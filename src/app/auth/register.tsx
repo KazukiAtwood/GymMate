@@ -9,8 +9,9 @@ import {
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
 } from "react-native";
+
+import { AppTextField } from "@/components/AppTextField";
 
 import { useSubmitLock } from "@/hooks/useSubmitLock";
 import {
@@ -84,7 +85,7 @@ export default function RegisterScreen() {
         </Text>
 
         <Text style={styles.label}>Nom affiché</Text>
-        <TextInput
+        <AppTextField
           value={displayName}
           onChangeText={setDisplayName}
           placeholder="Ex : Lina"
@@ -99,7 +100,7 @@ export default function RegisterScreen() {
         ) : null}
 
         <Text style={styles.label}>E-mail</Text>
-        <TextInput
+        <AppTextField
           value={email}
           onChangeText={setEmail}
           placeholder="prenom@email.com"
@@ -116,7 +117,7 @@ export default function RegisterScreen() {
         ) : null}
 
         <Text style={styles.label}>Mot de passe</Text>
-        <TextInput
+        <AppTextField
           value={password}
           onChangeText={setPassword}
           placeholder="6 caractères minimum"
@@ -134,7 +135,7 @@ export default function RegisterScreen() {
         ) : null}
 
         <Text style={styles.label}>Confirmation</Text>
-        <TextInput
+        <AppTextField
           value={confirmation}
           onChangeText={setConfirmation}
           placeholder="Répète le mot de passe"
@@ -219,13 +220,14 @@ function createStyles(colors: AppColors) {
   },
 
   input: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.backgroundElement,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontSize: 15,
+    color: colors.text,
   },
 
   fieldError: {

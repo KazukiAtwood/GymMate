@@ -10,11 +10,11 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import type { DocumentReference } from "firebase/firestore";
 
+import { AppTextField } from "@/components/AppTextField";
 import { MessageBubble } from "@/components/MessageBubble";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubmitLock } from "@/hooks/useSubmitLock";
@@ -268,11 +268,10 @@ export default function ChatScreen() {
             {draft.trim().length}/{CHAT_TEXT_MAX}
           </Text>
           <View style={styles.composer}>
-            <TextInput
+            <AppTextField
               value={draft}
               onChangeText={setDraft}
               placeholder="Écrire un message"
-              placeholderTextColor={colors.placeholder}
               style={styles.input}
               multiline
               maxLength={CHAT_TEXT_MAX}
@@ -357,9 +356,10 @@ function createStyles(colors: AppColors) {
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.backgroundElement,
     paddingHorizontal: 12,
     paddingVertical: 10,
+    fontSize: 16,
     color: colors.text,
   },
 

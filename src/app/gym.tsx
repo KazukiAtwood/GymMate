@@ -9,9 +9,10 @@ import {
     Pressable,
     StyleSheet,
     Text,
-    TextInput,
     View,
 } from "react-native";
+
+import { AppTextField } from "@/components/AppTextField";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubmitLock } from "@/hooks/useSubmitLock";
@@ -189,7 +190,7 @@ export default function GymScreen() {
           : "La salle reste fixe dans cette version. Tu verras ensuite les membres de cette salle."}
       </Text>
 
-      <TextInput
+      <AppTextField
         value={search}
         onChangeText={setSearch}
         placeholder="Rechercher par nom ou ville"
@@ -323,13 +324,14 @@ function createStyles(colors: AppColors) {
   },
 
   search: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.backgroundElement,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontSize: 15,
+    color: colors.text,
   },
 
   locationButton: {

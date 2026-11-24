@@ -10,9 +10,10 @@ import {
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
     View,
 } from "react-native";
+
+import { AppTextField } from "@/components/AppTextField";
 
 import { SPORTS } from "@/constants/profileOptions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -201,7 +202,7 @@ export default function NewRequestScreen() {
             {errors.sport ? <Text style={styles.fieldError}>{errors.sport}</Text> : null}
 
             <Text style={styles.label}>Date</Text>
-            <TextInput
+            <AppTextField
               value={date}
               onChangeText={setDate}
               placeholder="JJ/MM/AAAA"
@@ -212,7 +213,7 @@ export default function NewRequestScreen() {
             {errors.date ? <Text style={styles.fieldError}>{errors.date}</Text> : null}
 
             <Text style={styles.label}>Heure de début</Text>
-            <TextInput
+            <AppTextField
               value={start}
               onChangeText={setStart}
               placeholder="18:00"
@@ -223,7 +224,7 @@ export default function NewRequestScreen() {
             {errors.start ? <Text style={styles.fieldError}>{errors.start}</Text> : null}
 
             <Text style={styles.label}>Heure de fin</Text>
-            <TextInput
+            <AppTextField
               value={end}
               onChangeText={setEnd}
               placeholder="19:00"
@@ -234,7 +235,7 @@ export default function NewRequestScreen() {
             {errors.end ? <Text style={styles.fieldError}>{errors.end}</Text> : null}
 
             <Text style={styles.label}>Message</Text>
-            <TextInput
+            <AppTextField
               value={message}
               onChangeText={setMessage}
               placeholder="Un mot pour proposer la séance"
@@ -311,13 +312,14 @@ function createStyles(colors: AppColors) {
   },
 
   input: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.backgroundElement,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontSize: 15,
+    color: colors.text,
   },
 
   messageInput: {

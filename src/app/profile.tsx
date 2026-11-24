@@ -9,10 +9,10 @@ import {
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
     View,
 } from "react-native";
 
+import { AppTextField } from "@/components/AppTextField";
 import {
     DAYS,
     LEVELS,
@@ -243,7 +243,7 @@ export default function ProfileScreen() {
         ) : null}
 
         <Text style={styles.label}>Nom affiché</Text>
-        <TextInput
+        <AppTextField
           value={displayName}
           onChangeText={(value) => {
             touch();
@@ -259,7 +259,7 @@ export default function ProfileScreen() {
         ) : null}
 
         <Text style={styles.label}>Ville</Text>
-        <TextInput
+        <AppTextField
           value={city}
           onChangeText={(value) => {
             touch();
@@ -297,7 +297,7 @@ export default function ProfileScreen() {
         {errors.level ? <Text style={styles.fieldError}>{errors.level}</Text> : null}
 
         <Text style={styles.label}>Objectif</Text>
-        <TextInput
+        <AppTextField
           value={goal}
           onChangeText={(value) => {
             touch();
@@ -355,7 +355,7 @@ export default function ProfileScreen() {
             </Pressable>
           ))}
         </View>
-        <TextInput
+        <AppTextField
           value={start}
           onChangeText={setStart}
           placeholder="Début (ex : 18:00)"
@@ -364,7 +364,7 @@ export default function ProfileScreen() {
           editable={!pending}
           style={styles.input}
         />
-        <TextInput
+        <AppTextField
           value={end}
           onChangeText={setEnd}
           placeholder="Fin (ex : 20:00)"
@@ -392,7 +392,7 @@ export default function ProfileScreen() {
         ) : null}
 
         <Text style={styles.label}>Bio</Text>
-        <TextInput
+        <AppTextField
           value={bio}
           onChangeText={(value) => {
             touch();
@@ -501,13 +501,14 @@ function createStyles(colors: AppColors) {
   },
 
   input: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.backgroundElement,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
     fontSize: 15,
+    color: colors.text,
     marginTop: 8,
   },
 
