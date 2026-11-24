@@ -2,6 +2,7 @@ rules_version = '2';
 
 // J8 : le destinataire accepte dans une transaction
 // (demande, relation, chat et séance) ou refuse la demande seule.
+// J9 : un message appartient aux deux partenaires, avec un texte de 1 à 1 000 caractères.
 // Les nombres ci-dessous suivent src/utils/profileValidation.ts.
 
 service cloud.firestore {
@@ -230,6 +231,14 @@ service cloud.firestore {
       return ["relationId", "members", "createdAt"];
     }
 
+    function chatMember(pairId) {
+      return exists(/databases/$(database)/documents/chats/$(pairId))
+        && exists(/databases/$(database)/documents/relations/$(pairId))
+        && get(/databases/$(database)/documents/chats/$(pairId)).data.relationId == pairId
+        && request.auth.uid in get(/databases/$(database)/documents/chats/$(pairId)).data.members
+        && request.auth.uid in get(/databases/$(database)/documents/relations/$(pairId)).data.members;
+    }
+
     function sessionKeys() {
       return [
         "requestId",
@@ -410,6 +419,24 @@ service cloud.firestore {
         );
 
       allow update, delete: if false;
+
+      match /messages/{messageId} {
+        allow get: if signedIn() && chatMember(pairId);
+
+        allow list: if signedIn() && chatMember(pairId);
+
+        allow create: if signedIn()
+          && chatMember(pairId)
+          && request.resource.data.keys().hasOnly(["senderId", "text", "createdAt"])
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 1000
+          && !request.resource.data.text.matches('\\s*')
+          && request.resource.data.createdAt == request.time;
+
+        allow update, delete: if false;
+      }
     }
 
     match /trainingSessions/{requestId} {

@@ -1,8 +1,18 @@
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 
 import type { Relation } from "@/types/relation";
 
 import { db } from "./firebase";
+
+export async function getRelation(relationId: string) {
+  const snapshot = await getDoc(doc(db, "relations", relationId));
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  return mapRelation(snapshot.id, snapshot.data());
+}
 
 function asText(value: unknown) {
   return typeof value === "string" ? value : "";

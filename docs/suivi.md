@@ -98,7 +98,28 @@ Après republication de `firestore.rules` :
 
 ### Difficulté
 
-Les règles doivent être republiées. L'envoi des messages du chat reste le J9 : la conversation s'ouvre et n'a pas encore de saisie.
+Les règles doivent être republiées.
+
+## J9 · Échanger
+
+Les messages vivent dans `chats/{pairId}/messages`. L'écran vérifie le chat et la relation avant d'écouter.
+
+### Ce qui fonctionne
+
+- L'écoute prend les 50 derniers messages et les affiche du plus ancien au plus récent.
+- Un message envoyé et un message reçu se distinguent, avec l'heure. Tant que le serveur n'a pas confirmé l'heure, l'écran affiche Envoi...
+- Le texte doit contenir de 1 à 1 000 caractères. La saisie n'est vidée qu'après un envoi réussi. Une reprise réutilise le même identifiant.
+- Quitter l'écran arrête l'écoute. Changer de compte vide la liste avant la nouvelle lecture.
+- Les règles autorisent la lecture et l'écriture aux deux membres seulement. Un message ne peut plus être modifié ni supprimé.
+
+### Test à faire
+
+Après republication de `firestore.rules` :
+
+1. Patrick envoie un message à Lina : il apparaît chez Lina sans rechargement.
+2. Lina répond : Patrick le voit tout de suite.
+3. Un message vide est refusé et le texte saisi reste en place si l'envoi échoue.
+4. Fermer puis rouvrir le chat : l'historique est là, une seule écoute tourne.
 
 ## Atelier 1 et 2 · Téléphone et position
 
