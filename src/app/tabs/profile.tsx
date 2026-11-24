@@ -1,15 +1,21 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { dayLabel, formatMinutes, levelLabel } from "@/constants/profileOptions";
 import { ProfilePhotoEditor } from "@/components/ProfilePhotoEditor";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubmitLock } from "@/hooks/useSubmitLock";
 import { logoutAccount } from "@/services/authService";
 import { getGym } from "@/services/gymService";
 
 export default function ProfileTab() {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   const router = useRouter();
   const { user, profile } = useAuth();
   const { pending: signingOut, run: runLogout } = useSubmitLock();
@@ -61,6 +67,9 @@ export default function ProfileTab() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{profile?.displayName || "Mon profil"}</Text>
       {user?.email ? <Text style={styles.account}>{user.email}</Text> : null}
+      <View style={styles.toggle}>
+        <ThemeToggle />
+      </View>
       {user ? (
         <ProfilePhotoEditor uid={user.uid} displayName={profile?.displayName ?? ""} />
       ) : null}
@@ -116,10 +125,11 @@ export default function ProfileTab() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
   },
 
   content: {
@@ -131,36 +141,42 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   account: {
     marginTop: 6,
-    color: "#6B7280",
+    color: colors.textMuted,
+  },
+
+  toggle: {
+    marginTop: 16,
   },
 
   link: {
     marginTop: 16,
-    color: "#3C87F7",
+    color: colors.primary,
     fontWeight: "700",
   },
 
   card: {
     marginTop: 24,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 16,
     padding: 20,
     gap: 8,
   },
 
   line: {
-    color: "#1F2937",
+    color: colors.text,
     fontSize: 16,
   },
 
   bio: {
     marginTop: 8,
-    color: "#4B5563",
+    color: colors.textMuted,
     lineHeight: 22,
   },
 
@@ -169,12 +185,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 18,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   slot: {
-    color: "#1E40AF",
-    backgroundColor: "#E0ECFF",
+    color: colors.infoText,
+    backgroundColor: colors.infoSurface,
     borderRadius: 10,
     padding: 10,
     marginTop: 8,
@@ -183,12 +199,12 @@ const styles = StyleSheet.create({
 
   error: {
     marginTop: 16,
-    color: "#B91C1C",
+    color: colors.danger,
   },
 
   button: {
     marginTop: 28,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
@@ -199,7 +215,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontWeight: "700",
   },
 
@@ -210,7 +226,8 @@ const styles = StyleSheet.create({
   },
 
   logoutText: {
-    color: "#B91C1C",
+    color: colors.danger,
     fontWeight: "700",
   },
 });
+}

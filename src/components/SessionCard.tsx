@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { SessionStatus } from "@/types/trainingSession";
@@ -47,6 +49,9 @@ export function SessionCard({
   onCancelReminder,
   onAddToCalendar,
 }: SessionCardProps) {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -65,7 +70,7 @@ export function SessionCard({
             onPress={onCancel}
           >
             {pending ? (
-              <ActivityIndicator color="#1F2937" />
+              <ActivityIndicator color={colors.text} />
             ) : (
               <Text style={styles.secondaryText}>Annuler</Text>
             )}
@@ -86,7 +91,7 @@ export function SessionCard({
               onPress={reminderScheduled ? onCancelReminder : onScheduleReminder}
             >
               {reminderPending ? (
-                <ActivityIndicator color="#1F2937" />
+                <ActivityIndicator color={colors.text} />
               ) : (
                 <Text style={styles.secondaryText}>
                   {reminderScheduled ? "Annuler le rappel" : "Me rappeler"}
@@ -104,7 +109,7 @@ export function SessionCard({
               onPress={onAddToCalendar}
             >
               {calendarPending ? (
-                <ActivityIndicator color="#1F2937" />
+                <ActivityIndicator color={colors.text} />
               ) : (
                 <Text style={styles.secondaryText}>
                   {calendarAdded ? "Dans le calendrier" : "Au calendrier"}
@@ -118,9 +123,12 @@ export function SessionCard({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 16,
     padding: 18,
   },
@@ -137,7 +145,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   badge: {
@@ -150,23 +158,23 @@ const styles = StyleSheet.create({
   },
 
   planned: {
-    backgroundColor: "#E0ECFF",
-    color: "#1E40AF",
+    backgroundColor: colors.infoSurface,
+    color: colors.infoText,
   },
 
   done: {
-    backgroundColor: "#DCFCE7",
-    color: "#166534",
+    backgroundColor: colors.successSurface,
+    color: colors.successText,
   },
 
   cancelled: {
-    backgroundColor: "#F3F4F6",
-    color: "#4B5563",
+    backgroundColor: colors.mutedSurface,
+    color: colors.textMuted,
   },
 
   line: {
     marginTop: 4,
-    color: "#4B5563",
+    color: colors.textMuted,
   },
 
   actions: {
@@ -178,7 +186,7 @@ const styles = StyleSheet.create({
 
   primary: {
     flex: 1,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     minHeight: 44,
     alignItems: "center",
@@ -186,7 +194,7 @@ const styles = StyleSheet.create({
   },
 
   primaryText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontWeight: "700",
   },
 
@@ -197,12 +205,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#FFFFFF",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
 
   secondaryText: {
-    color: "#1F2937",
+    color: colors.text,
     fontWeight: "700",
   },
 
@@ -210,3 +218,4 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
+}

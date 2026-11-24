@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -35,6 +37,9 @@ function readParam(value: string | string[] | undefined) {
 }
 
 export default function NewRequestScreen() {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   const router = useRouter();
   const { receiverId: receiverIdParam } = useLocalSearchParams<{
     receiverId?: string;
@@ -170,7 +175,7 @@ export default function NewRequestScreen() {
         <Text style={styles.title}>Proposer un entraînement</Text>
 
         {loadingReceiver ? (
-          <ActivityIndicator style={styles.loader} size="large" color="#3C87F7" />
+          <ActivityIndicator style={styles.loader} size="large" color={colors.primary} />
         ) : receiverError ? (
           <Text style={styles.formError}>{receiverError}</Text>
         ) : (
@@ -261,10 +266,11 @@ export default function NewRequestScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
   },
 
   content: {
@@ -274,7 +280,7 @@ const styles = StyleSheet.create({
   },
 
   back: {
-    color: "#3C87F7",
+    color: colors.primary,
     fontWeight: "700",
     marginBottom: 16,
   },
@@ -282,13 +288,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   subtitle: {
     marginTop: 8,
     marginBottom: 8,
-    color: "#6B7280",
+    color: colors.textMuted,
     lineHeight: 22,
   },
 
@@ -301,13 +307,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 16,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
@@ -322,7 +328,7 @@ const styles = StyleSheet.create({
   counter: {
     textAlign: "right",
     marginTop: 5,
-    color: "#6B7280",
+    color: colors.textMuted,
     fontSize: 12,
   },
 
@@ -334,36 +340,36 @@ const styles = StyleSheet.create({
 
   option: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 9,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
   },
 
   optionSelected: {
-    backgroundColor: "#3C87F7",
-    borderColor: "#3C87F7",
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 
   optionText: {
-    color: "#374151",
+    color: colors.text,
     fontWeight: "600",
   },
 
   optionTextSelected: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
   },
 
   fieldError: {
-    color: "#B91C1C",
+    color: colors.danger,
     marginTop: 6,
   },
 
   formError: {
     marginTop: 16,
-    color: "#B91C1C",
-    backgroundColor: "#FEE2E2",
+    color: colors.danger,
+    backgroundColor: colors.dangerSurface,
     borderRadius: 12,
     padding: 12,
     lineHeight: 20,
@@ -371,7 +377,7 @@ const styles = StyleSheet.create({
 
   button: {
     marginTop: 24,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: "center",
@@ -382,8 +388,9 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: "700",
   },
 });
+}

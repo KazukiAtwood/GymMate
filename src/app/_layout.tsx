@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ThemeProvider, useThemeControls } from "@/contexts/ThemeContext";
 import { logoutAccount } from "@/services/authService";
 
 export default function RootLayout() {
@@ -16,23 +17,25 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <AuthProvider>
-      <StatusBar style="dark" />
-      <RootNavigator />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ThemedStatusBar />
+        <RootNavigator />
+      </AuthProvider>
+    </ThemeProvider>
   );
+}
+
+function ThemedStatusBar() {
+  const { scheme } = useThemeControls();
+  return <StatusBar style={scheme === "dark" ? "light" : "dark"} />;
 }
 
 function RootNavigator() {
   const { user, initializing, profileLoading, error, refreshProfile } = useAuth();
 
   if (initializing || (user && profileLoading)) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#3C87F7" />
-        <Text style={styles.loadingText}>Chargement de la session...</Text>
-      </View>
-    );
+    return <SessionLoading />;
   }
 
   if (user && error) {
@@ -61,6 +64,17 @@ function RootNavigator() {
   );
 }
 
+function SessionLoading() {
+  const { colors } = useThemeControls();
+
+  return (
+    <View style={[styles.center, { backgroundColor: colors.background }]}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={[styles.loadingText, { color: colors.textMuted }]}>Chargement de la session...</Text>
+    </View>
+  );
+}
+
 function ProfileLoadError({
   message,
   onRetry,
@@ -68,6 +82,7 @@ function ProfileLoadError({
   message: string;
   onRetry: () => void;
 }) {
+  const { colors } = useThemeControls();
   const [logoutError, setLogoutError] = useState<string | null>(null);
 
   async function handleLogout() {
@@ -80,15 +95,15 @@ function ProfileLoadError({
   }
 
   return (
-    <View style={styles.center}>
-      <Text style={styles.errorTitle}>Profil indisponible</Text>
-      <Text style={styles.errorText}>{message}</Text>
-      <Pressable style={styles.button} onPress={onRetry}>
-        <Text style={styles.buttonText}>Réessayer</Text>
+    <View style={[styles.center, { backgroundColor: colors.background }]}>
+      <Text style={[styles.errorTitle, { color: colors.text }]}>Profil indisponible</Text>
+      <Text style={[styles.errorText, { color: colors.textMuted }]}>{message}</Text>
+      <Pressable style={[styles.button, { backgroundColor: colors.primary }]} onPress={onRetry}>
+        <Text style={[styles.buttonText, { color: colors.onPrimary }]}>Réessayer</Text>
       </Pressable>
-      {logoutError ? <Text style={styles.errorText}>{logoutError}</Text> : null}
+      {logoutError ? <Text style={[styles.errorText, { color: colors.danger }]}>{logoutError}</Text> : null}
       <Pressable onPress={() => void handleLogout()}>
-        <Text style={styles.logout}>Se déconnecter</Text>
+        <Text style={[styles.logout, { color: colors.danger }]}>Se déconnecter</Text>
       </Pressable>
     </View>
   );
@@ -123,7 +138,7 @@ const styles = StyleSheet.create({
 
   button: {
     marginTop: 20,
-    backgroundColor: "#3C87F7",
+    backgroundColor: "#C2410C",
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 24,

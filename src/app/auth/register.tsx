@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { Link } from "expo-router";
 import { useState } from "react";
 import {
@@ -23,6 +25,9 @@ import {
 } from "@/utils/profileValidation";
 
 export default function RegisterScreen() {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -173,10 +178,11 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
   },
 
   content: {
@@ -190,11 +196,11 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "700",
     marginBottom: 16,
-    color: "#1F2937",
+    color: colors.text,
   },
 
   text: {
-    color: "#6B7280",
+    color: colors.textMuted,
     marginBottom: 8,
     lineHeight: 22,
   },
@@ -203,19 +209,19 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   helper: {
-    color: "#6B7280",
+    color: colors.textMuted,
     fontSize: 13,
     marginTop: 6,
   },
 
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
@@ -223,14 +229,14 @@ const styles = StyleSheet.create({
   },
 
   fieldError: {
-    color: "#B91C1C",
+    color: colors.danger,
     marginTop: 6,
   },
 
   formError: {
     marginTop: 16,
-    color: "#B91C1C",
-    backgroundColor: "#FEE2E2",
+    color: colors.danger,
+    backgroundColor: colors.dangerSurface,
     borderRadius: 12,
     padding: 12,
     lineHeight: 20,
@@ -238,7 +244,7 @@ const styles = StyleSheet.create({
 
   button: {
     marginTop: 24,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: "center",
@@ -253,13 +259,13 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: "700",
   },
 
   link: {
-    color: "#3C87F7",
+    color: colors.primary,
     fontWeight: "700",
     fontSize: 16,
     marginTop: 20,
@@ -267,6 +273,7 @@ const styles = StyleSheet.create({
 
   back: {
     marginTop: 16,
-    color: "#6B7280",
+    color: colors.textMuted,
   },
 });
+}

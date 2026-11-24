@@ -1,48 +1,45 @@
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useTheme } from "@/contexts/ThemeContext";
+
 export default function HomeScreen() {
   const router = useRouter();
-
-  function handleLogin() {
-    router.push("/auth/login");
-  }
-
-  function handleRegister() {
-    router.push("/auth/register");
-  }
+  const colors = useTheme();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>GymMate</Text>
-
-        <Text style={styles.subtitle}>Trouve ton partenaire de sport.</Text>
-
-        <Text style={styles.description}>
-          Entraîne-toi avec des personnes qui partagent tes objectifs.
-        </Text>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.button,
-            pressed && styles.buttonPressed,
-          ]}
-          onPress={handleLogin}
-        >
-          <Text style={styles.buttonText}>Se connecter</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.secondaryButton,
-            pressed && styles.buttonPressed,
-          ]}
-          onPress={handleRegister}
-        >
-          <Text style={styles.secondaryButtonText}>Créer un compte</Text>
-        </Pressable>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.toggle}>
+        <ThemeToggle />
       </View>
+      <View style={[styles.badge, { backgroundColor: colors.infoSurface }]}>
+        <Text style={[styles.badgeText, { color: colors.primary }]}>GymMate</Text>
+      </View>
+      <Text style={[styles.title, { color: colors.text }]}>Trouve ton partenaire de sport.</Text>
+      <Text style={[styles.description, { color: colors.textMuted }]}>
+        Entraîne-toi avec des personnes qui partagent tes objectifs.
+      </Text>
+      <Pressable
+        style={({ pressed }) => [
+          styles.button,
+          { backgroundColor: colors.primary },
+          pressed && styles.pressed,
+        ]}
+        onPress={() => router.push("/auth/login")}
+      >
+        <Text style={[styles.buttonText, { color: colors.onPrimary }]}>Se connecter</Text>
+      </Pressable>
+      <Pressable
+        style={({ pressed }) => [
+          styles.secondaryButton,
+          { borderColor: colors.primary, backgroundColor: colors.surface },
+          pressed && styles.pressed,
+        ]}
+        onPress={() => router.push("/auth/register")}
+      >
+        <Text style={[styles.secondaryButtonText, { color: colors.primary }]}>Créer un compte</Text>
+      </Pressable>
     </View>
   );
 }
@@ -50,74 +47,71 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
     justifyContent: "center",
-    alignItems: "center",
     padding: 24,
   },
 
-  content: {
-    width: "100%",
-    maxWidth: 500,
-    alignItems: "center",
+  toggle: {
+    position: "absolute",
+    top: 56,
+    right: 24,
   },
 
-  title: {
-    fontSize: 42,
-    fontWeight: "700",
-    color: "#1F2937",
+  badge: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     marginBottom: 16,
   },
 
-  subtitle: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#374151",
-    textAlign: "center",
-    marginBottom: 12,
+  badgeText: {
+    fontWeight: "800",
+    letterSpacing: 0.4,
+  },
+
+  title: {
+    fontSize: 36,
+    fontWeight: "800",
+    lineHeight: 42,
+    maxWidth: 460,
   },
 
   description: {
-    fontSize: 16,
-    color: "#6B7280",
-    textAlign: "center",
-    lineHeight: 24,
-    marginBottom: 32,
+    marginTop: 12,
+    marginBottom: 28,
+    fontSize: 17,
+    lineHeight: 26,
+    maxWidth: 420,
   },
 
   button: {
-    backgroundColor: "#3C87F7",
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 12,
-    minWidth: 220,
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: "center",
+    maxWidth: 420,
   },
 
-  buttonPressed: {
-    opacity: 0.7,
+  pressed: {
+    opacity: 0.75,
   },
 
   buttonText: {
-    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
   },
 
   secondaryButton: {
     marginTop: 12,
     borderWidth: 1,
-    borderColor: "#3C87F7",
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 12,
-    minWidth: 220,
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: "center",
+    maxWidth: 420,
   },
 
   secondaryButtonText: {
-    color: "#3C87F7",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
   },
 });

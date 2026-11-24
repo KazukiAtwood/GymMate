@@ -187,5 +187,27 @@ Le rappel est programmé sur le téléphone, pas dans Firestore.
 
 **Au calendrier** ajoute la séance planifiée dans le calendrier du téléphone. L'accès est demandé seulement après l'appui. Une séance déjà ajoutée n'est pas dupliquée. Annuler la séance retire aussi cet événement. Sur le navigateur, le bouton indique que l'ajout se fait sur le téléphone. Si Android recharge l'application au moment de l'autorisation, l'événement est ajouté au retour sur Séances. Dans Expo Go, le canal « Rappels » peut être indisponible : le rappel est alors programmé sur le canal par défaut.
 
+## J10 · Livrer
+
+Le dépôt décrit l'installation, les données et la recette. T01 à T11 ont été joués sur l'émulateur. T12 reste à confirmer sur le téléphone, réseau coupé.
+
+### Ce qui est prêt
+
+- `README.md` : objectif, fonctions, versions, installation, Firebase et comptes de démonstration.
+- `docs/modele-donnees.md` : collections, champs et données qui restent sur le téléphone.
+- `docs/limites.md` : salle fixe, 50 messages, photo locale, Expo Go.
+- `docs/tests.md` : recette T01 à T12, avec le résultat réel du typage.
+- `firestore.rules` est dans le dépôt. Il doit encore être publié dans la console avant la recette.
+
+### Test réalisé
+
+Le 24 novembre 2026, la recette `scripts/recipe.mjs` a tourné sur les émulateurs Auth et Firestore. T01 à T11 sont OK. T12 est partiel : l'émulateur n'a pas simulé la coupure, et la reprise n'a pas créé de deuxième séance.
+
+T05 a montré qu'une demande vers une autre salle laissait échapper l'erreur Firestore. Le service répond maintenant « Cette personne n'est pas dans ta salle. »
+
+### Difficulté
+
+Les captures d'écran et de Firestore restent à déposer dans `docs/captures/`. Le 24 novembre 2026, le navigateur déjà ouvert montrait Découvrir pour Campus Training Paris, avec les cartes Lina et Pa. Cette vue ne valide pas T03 : le compte connecté et la salle de chaque profil n'ont pas été contrôlés. La recette T03, elle, a été vérifiée sur l'émulateur.
+
 
 

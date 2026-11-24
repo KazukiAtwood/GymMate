@@ -1,56 +1,112 @@
-# Welcome to your Expo app 👋
+# GymMate
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+GymMate aide les membres d'une même salle à trouver un partenaire et à préparer une séance : profil sportif, salle, demande, acceptation ou refus, relation, séance et chat.
 
-## Get started
+Le parcours obligatoire relie deux comptes de la même salle. Un troisième compte, dans une autre salle, sert à vérifier que les données des deux premiers restent inaccessibles.
 
-1. Install dependencies
+## Fonctionnalités réalisées
 
-   ```bash
-   npm install
-   ```
+- Inscription, connexion, restauration de session et déconnexion.
+- Profil sportif enregistré dans Firestore, avec reprise si le compte existe déjà mais que le profil n'est pas encore écrit.
+- Choix d'une salle une seule fois, puis liste des autres membres de cette salle et fiche détaillée.
+- Demande d'entraînement, acceptation ou refus. L'acceptation crée dans une seule transaction la relation, le chat et la séance.
+- Séances à venir et historique : annulation, ou séance marquée terminée après l'heure de fin.
+- Messages en temps réel, limités aux deux membres de la relation.
+- Règles d'accès dans `firestore.rules`.
+- Au-delà du socle : position et tri des salles par distance, photo de profil conservée sur le téléphone, rappel local, ajout au calendrier du téléphone, thème clair ou sombre.
 
-2. Start the app
+La photo n'est pas envoyée à Firebase Storage. Elle reste dans les fichiers de l'application.
 
-   ```bash
-   npx expo start
-   ```
+## Versions
 
-In the output, you'll find options to open the app in a
+Relevées dans `package-lock.json` le 24 novembre 2026.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+| Outil | Version |
+| --- | --- |
+| Node.js | 26.13.1 |
+| npm | 12.2.3 |
+| Expo | 57.0.23 |
+| Expo Router | 57.0.21 |
+| React Native | 0.86.3 |
+| React | 19.2.3 |
+| Firebase JS | 13.0.0 |
+| TypeScript | 6.0.3 |
+| AsyncStorage | 2.2.0 |
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+L'application se lance avec Expo Go compatible SDK 57, ou dans le navigateur avec `npx expo start`.
 
-## Get a fresh project
-
-When you're ready, run:
+## Installation
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Puis copier l'exemple d'environnement :
 
-### Other setup steps
+```bash
+copy .env.example .env.local
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Renseigner `.env.local`. Ce fichier est ignoré par Git. Aucune clé d'administration ne doit être ajoutée au dépôt.
 
-## Learn more
+## Configuration Firebase
 
-To learn more about developing your project with Expo, look at the following resources:
+Créer un projet Firebase et une application Web. Activer Authentication avec Email/Mot de passe. Créer Firestore avec des règles fermées au départ, puis publier le fichier `firestore.rules` du dépôt.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Variables attendues :
 
-## Join the community
+| Console Firebase | Variable |
+| --- | --- |
+| apiKey | `EXPO_PUBLIC_FIREBASE_API_KEY` |
+| authDomain | `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN` |
+| projectId | `EXPO_PUBLIC_FIREBASE_PROJECT_ID` |
+| appId | `EXPO_PUBLIC_FIREBASE_APP_ID` |
 
-Join our community of developers creating universal apps.
+Dans Firestore, créer les trois salles avant les essais. Les adresses doivent être fictives.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+| Identifiant | Nom | Ville |
+| --- | --- | --- |
+| `gym_sqy` | Campus Gym SQY | Guyancourt |
+| `gym_versailles` | Studio Forme Versailles | Versailles |
+| `gym_paris` | Campus Training Paris | Paris |
+
+Chaque document de salle contient `name`, `city`, `address` et `createdAt`. Les coordonnées utilisées pour le tri par distance sont dans l'application : SQY 48,77 / 2,08 et Paris 48,86 / 2,35.
+
+Noter dans ce README la localisation choisie pour Firestore au moment de la création de la base. Elle n'est pas dans le code.
+
+Aucun index composite n'est requis : les listes de demandes, relations et séances sont filtrées sur un seul champ, puis triées dans l'application. Les messages utilisent `orderBy(createdAt)`, indexé automatiquement.
+
+Après chaque changement de `.env.local` ou de règles, relancer Expo et republier les règles dans la console.
+
+## Comptes de test
+
+Les comptes se créent dans l'application. Il ne faut pas coller un document `users` à la main : l'identifiant doit être celui d'Authentication.
+
+| Rôle | Exemple | Salle | Niveau | Objectif |
+| --- | --- | --- | --- | --- |
+| A | Lina | Campus Gym SQY | Débutant | Remise en forme |
+| B | Sami | Campus Gym SQY | Intermédiaire | Régularité |
+| C | Nora | Campus Training Paris | Débutant | Cardio |
+
+Compléter le profil, choisir la salle, puis suivre `docs/tests.md`.
+
+## Lancement
+
+```bash
+npx expo start
+```
+
+Ouvrir le projet dans Expo Go, ou appuyer sur `w` pour le navigateur. Le rappel, la photo locale et le calendrier se vérifient sur le téléphone.
+
+## Dossier docs
+
+- `docs/suivi.md` : ce qui a été réalisé à chaque jalon.
+- `docs/modele-donnees.md` : collections et champs.
+- `docs/limites.md` : limites connues.
+- `docs/tests.md` : recette T01 à T12, exécutée sur l'émulateur le 24 novembre 2026. T12 reste partiel.
+
+Les captures d'écran et les captures Firestore se déposent dans `docs/captures/` après la recette. Elles ne sont pas encore dans le dépôt.
+
+## Structure
+
+Les écrans sont dans `src/app`. Les accès Firebase sont dans `src/services`. Les types et les validations sont dans `src/types` et `src/utils`.

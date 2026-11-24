@@ -148,10 +148,30 @@ export async function sendTrainingRequest(
     return { status: "already-exists", id: existing.id };
   }
 
-  const [sender, receiver] = await Promise.all([
-    getUserProfile(input.senderId),
-    getUserProfile(input.receiverId),
-  ]);
+  let sender;
+  let receiver;
+
+  try {
+    sender = await getUserProfile(input.senderId);
+  } catch (error) {
+    if (readErrorCode(error) === "permission-denied") {
+      throw new RequestServiceError(
+        "L'envoi a été refusé. Publie les règles Firestore, puis réessaie.",
+      );
+    }
+
+    throw error;
+  }
+
+  try {
+    receiver = await getUserProfile(input.receiverId);
+  } catch (error) {
+    if (readErrorCode(error) === "permission-denied") {
+      throw new RequestServiceError("Cette personne n'est pas dans ta salle.");
+    }
+
+    throw error;
+  }
 
   if (!sender?.gymId) {
     throw new RequestServiceError("Choisis d'abord ta salle.");

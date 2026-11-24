@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { Redirect, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -19,6 +21,9 @@ import { readErrorCode } from "@/utils/errorCode";
 import { isProfileReady } from "@/utils/profileValidation";
 
 export default function RelationsScreen() {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   const router = useRouter();
   const { user, profile } = useAuth();
   const [relations, setRelations] = useState<Relation[]>([]);
@@ -107,7 +112,7 @@ export default function RelationsScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#3C87F7" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : error ? (
         <View style={styles.centered}>
@@ -149,10 +154,11 @@ export default function RelationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
     paddingTop: 64,
     paddingHorizontal: 20,
   },
@@ -160,13 +166,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   subtitle: {
     marginTop: 8,
     marginBottom: 16,
-    color: "#6B7280",
+    color: colors.textMuted,
     lineHeight: 20,
   },
 
@@ -187,21 +193,22 @@ const styles = StyleSheet.create({
   },
 
   message: {
-    color: "#6B7280",
+    color: colors.textMuted,
     textAlign: "center",
     lineHeight: 22,
   },
 
   retry: {
     marginTop: 16,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 18,
   },
 
   retryText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontWeight: "700",
   },
 });
+}

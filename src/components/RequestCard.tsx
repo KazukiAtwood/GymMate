@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { RequestStatus } from "@/types/trainingRequest";
@@ -35,6 +37,9 @@ export function RequestCard({
   onAccept,
   onReject,
 }: RequestCardProps) {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -54,7 +59,7 @@ export function RequestCard({
       {canRespond ? (
         <View style={styles.actions}>
           {responding ? (
-            <ActivityIndicator color="#3C87F7" />
+            <ActivityIndicator color={colors.primary} />
           ) : (
             <>
               {slotPassed ? null : (
@@ -73,9 +78,12 @@ export function RequestCard({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 16,
     padding: 18,
   },
@@ -92,7 +100,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   badge: {
@@ -105,34 +113,34 @@ const styles = StyleSheet.create({
   },
 
   pending: {
-    backgroundColor: "#FEF3C7",
-    color: "#92400E",
+    backgroundColor: colors.warningSurface,
+    color: colors.warningText,
   },
 
   accepted: {
-    backgroundColor: "#DCFCE7",
-    color: "#166534",
+    backgroundColor: colors.successSurface,
+    color: colors.successText,
   },
 
   rejected: {
-    backgroundColor: "#FEE2E2",
-    color: "#991B1B",
+    backgroundColor: colors.dangerSurface,
+    color: colors.danger,
   },
 
   line: {
     marginTop: 4,
-    color: "#4B5563",
+    color: colors.textMuted,
   },
 
   message: {
     marginTop: 10,
-    color: "#1F2937",
+    color: colors.text,
     lineHeight: 20,
   },
 
   hint: {
     marginTop: 12,
-    color: "#92400E",
+    color: colors.warningText,
     lineHeight: 20,
   },
 
@@ -144,7 +152,7 @@ const styles = StyleSheet.create({
 
   accept: {
     flex: 1,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     minHeight: 44,
     alignItems: "center",
@@ -152,7 +160,7 @@ const styles = StyleSheet.create({
   },
 
   acceptText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontWeight: "700",
   },
 
@@ -163,12 +171,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#FECACA",
-    backgroundColor: "#FFFFFF",
+    borderColor: colors.danger,
+    backgroundColor: colors.surface,
   },
 
   rejectText: {
-    color: "#B91C1C",
+    color: colors.danger,
     fontWeight: "700",
   },
 });
+}

@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type RelationCardProps = {
@@ -7,6 +9,9 @@ type RelationCardProps = {
 };
 
 export function RelationCard({ partnerName, gymName, onOpenChat }: RelationCardProps) {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.card}>
       <Text style={styles.name}>{partnerName}</Text>
@@ -18,9 +23,12 @@ export function RelationCard({ partnerName, gymName, onOpenChat }: RelationCardP
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 16,
     padding: 18,
   },
@@ -28,17 +36,17 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   line: {
     marginTop: 6,
-    color: "#4B5563",
+    color: colors.textMuted,
   },
 
   button: {
     marginTop: 16,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     minHeight: 44,
     alignItems: "center",
@@ -46,7 +54,8 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontWeight: "700",
   },
 });
+}

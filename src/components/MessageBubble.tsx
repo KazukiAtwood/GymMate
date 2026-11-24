@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { StyleSheet, Text, View } from "react-native";
 
 import type { ChatMessage } from "@/types/chatMessage";
@@ -22,6 +24,9 @@ function formatMessageTime(message: ChatMessage) {
 }
 
 export function MessageBubble({ message, mine }: MessageBubbleProps) {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <View style={[styles.row, mine ? styles.mineRow : styles.theirRow]}>
       <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
@@ -34,7 +39,8 @@ export function MessageBubble({ message, mine }: MessageBubbleProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   row: {
     marginTop: 8,
   },
@@ -55,11 +61,11 @@ const styles = StyleSheet.create({
   },
 
   mine: {
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
   },
 
   theirs: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
   },
 
   text: {
@@ -68,11 +74,11 @@ const styles = StyleSheet.create({
   },
 
   mineText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
   },
 
   theirText: {
-    color: "#1F2937",
+    color: colors.text,
   },
 
   time: {
@@ -81,10 +87,11 @@ const styles = StyleSheet.create({
   },
 
   mineTime: {
-    color: "#DBEAFE",
+    color: colors.onPrimary,
   },
 
   theirTime: {
-    color: "#6B7280",
+    color: colors.textMuted,
   },
 });
+}

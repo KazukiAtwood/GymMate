@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { Redirect, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -21,6 +23,9 @@ import { readErrorCode } from "@/utils/errorCode";
 import { isProfileReady } from "@/utils/profileValidation";
 
 export default function MemberDetailsScreen() {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   const { userId } = useLocalSearchParams<{
     userId: string;
   }>();
@@ -104,7 +109,7 @@ export default function MemberDetailsScreen() {
       </Pressable>
 
       {loading ? (
-        <ActivityIndicator style={styles.loader} size="large" color="#3C87F7" />
+        <ActivityIndicator style={styles.loader} size="large" color={colors.primary} />
       ) : error ? (
         <Text style={styles.info}>{error}</Text>
       ) : member ? (
@@ -145,10 +150,11 @@ export default function MemberDetailsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
   },
 
   content: {
@@ -158,7 +164,7 @@ const styles = StyleSheet.create({
   },
 
   back: {
-    color: "#3C87F7",
+    color: colors.primary,
     fontWeight: "700",
     marginBottom: 20,
   },
@@ -170,18 +176,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   line: {
     marginTop: 10,
-    color: "#1F2937",
+    color: colors.text,
     fontSize: 16,
   },
 
   bio: {
     marginTop: 16,
-    color: "#4B5563",
+    color: colors.textMuted,
     lineHeight: 22,
   },
 
@@ -190,12 +196,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 18,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   slot: {
-    color: "#1E40AF",
-    backgroundColor: "#E0ECFF",
+    color: colors.infoText,
+    backgroundColor: colors.infoSurface,
     borderRadius: 10,
     padding: 10,
     marginTop: 8,
@@ -204,21 +210,22 @@ const styles = StyleSheet.create({
 
   info: {
     marginTop: 20,
-    color: "#6B7280",
+    color: colors.textMuted,
     lineHeight: 22,
   },
 
   button: {
     marginTop: 28,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: "center",
   },
 
   buttonText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: "700",
   },
 });
+}

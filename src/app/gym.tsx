@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import * as Location from "expo-location";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -21,6 +23,9 @@ import { distanceKm, formatBirdDistance } from "@/utils/distance";
 import { isProfileReady } from "@/utils/profileValidation";
 
 export default function GymScreen() {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   const router = useRouter();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const showingPosition = mode === "position";
@@ -217,7 +222,7 @@ export default function GymScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#3C87F7" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : error ? (
         <View style={styles.centered}>
@@ -295,10 +300,11 @@ export default function GymScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
     paddingTop: 64,
     paddingHorizontal: 20,
   },
@@ -306,20 +312,20 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   subtitle: {
     marginTop: 8,
     marginBottom: 16,
-    color: "#6B7280",
+    color: colors.textMuted,
     lineHeight: 22,
   },
 
   search: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
@@ -333,13 +339,13 @@ const styles = StyleSheet.create({
 
   locationText: {
     marginTop: 8,
-    color: "#4B5563",
+    color: colors.textMuted,
     lineHeight: 20,
   },
 
   distance: {
     marginTop: 8,
-    color: "#1E40AF",
+    color: colors.infoText,
     fontWeight: "700",
   },
 
@@ -354,27 +360,27 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: colors.border,
   },
 
   cardSelected: {
-    borderColor: "#3C87F7",
-    backgroundColor: "#EFF6FF",
+    borderColor: colors.primary,
+    backgroundColor: colors.infoSurface,
   },
 
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   cardText: {
     marginTop: 4,
-    color: "#4B5563",
+    color: colors.textMuted,
   },
 
   centered: {
@@ -385,7 +391,7 @@ const styles = StyleSheet.create({
   },
 
   message: {
-    color: "#6B7280",
+    color: colors.textMuted,
     textAlign: "center",
     lineHeight: 22,
   },
@@ -396,18 +402,18 @@ const styles = StyleSheet.create({
   },
 
   confirmationText: {
-    color: "#1F2937",
+    color: colors.text,
     lineHeight: 22,
   },
 
   error: {
     marginTop: 8,
-    color: "#B91C1C",
+    color: colors.danger,
   },
 
   button: {
     marginTop: 12,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: "center",
@@ -418,21 +424,21 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontWeight: "700",
   },
 
   secondaryButton: {
     marginTop: 16,
     borderWidth: 1,
-    borderColor: "#3C87F7",
+    borderColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 18,
   },
 
   secondaryButtonText: {
-    color: "#3C87F7",
+    color: colors.primary,
     fontWeight: "700",
   },
 
@@ -442,7 +448,8 @@ const styles = StyleSheet.create({
   },
 
   logoutText: {
-    color: "#B91C1C",
+    color: colors.danger,
     fontWeight: "700",
   },
 });
+}

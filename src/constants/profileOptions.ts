@@ -40,6 +40,27 @@ export function formatMinutes(minutes: number) {
   return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 }
 
+export function parseClockToMinutes(value: string) {
+  const match = /^(\d{1,2})(?::(\d{2}))?$/.exec(value.trim());
+
+  if (!match) {
+    return null;
+  }
+
+  const hours = Number(match[1]);
+  const minutes = match[2] === undefined ? 0 : Number(match[2]);
+
+  if (hours === 24) {
+    return minutes === 0 ? 1440 : null;
+  }
+
+  if (hours > 23 || minutes > 59) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+}
+
 export function formatAvailabilitySummary(
   slots: { day: number; start: number; end: number }[],
 ) {

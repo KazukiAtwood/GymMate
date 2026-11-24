@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { Redirect, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -27,6 +29,9 @@ import { isProfileReady } from "@/utils/profileValidation";
 type RequestList = "received" | "sent";
 
 export default function RequestsScreen() {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   const { user, profile } = useAuth();
   const { tab, notice } = useLocalSearchParams<{
     tab?: string;
@@ -176,7 +181,7 @@ export default function RequestsScreen() {
 
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#3C87F7" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : error ? (
         <View style={styles.centered}>
@@ -228,10 +233,11 @@ export default function RequestsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
     paddingTop: 64,
     paddingHorizontal: 20,
   },
@@ -239,7 +245,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   switch: {
@@ -254,37 +260,37 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
   },
 
   switchButtonActive: {
-    backgroundColor: "#3C87F7",
-    borderColor: "#3C87F7",
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 
   switchText: {
-    color: "#374151",
+    color: colors.text,
     fontWeight: "700",
   },
 
   switchTextActive: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
   },
 
   notice: {
     marginBottom: 12,
-    color: "#1E40AF",
-    backgroundColor: "#E0ECFF",
+    color: colors.infoText,
+    backgroundColor: colors.infoSurface,
     borderRadius: 12,
     padding: 12,
   },
 
   actionError: {
     marginBottom: 12,
-    color: "#991B1B",
-    backgroundColor: "#FEE2E2",
+    color: colors.danger,
+    backgroundColor: colors.dangerSurface,
     borderRadius: 12,
     padding: 12,
     lineHeight: 20,
@@ -307,21 +313,22 @@ const styles = StyleSheet.create({
   },
 
   message: {
-    color: "#6B7280",
+    color: colors.textMuted,
     textAlign: "center",
     lineHeight: 22,
   },
 
   retry: {
     marginTop: 16,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 18,
   },
 
   retryText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontWeight: "700",
   },
 });
+}

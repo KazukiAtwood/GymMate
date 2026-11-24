@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -46,6 +48,9 @@ function firstAsset(result: ImagePicker.ImagePickerResult): PickedAvatar | null 
 }
 
 export function ProfilePhotoEditor({ uid, displayName }: ProfilePhotoEditorProps) {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   const [savedUri, setSavedUri] = useState<string | null>(null);
   const [draft, setDraft] = useState<PickedAvatar | null>(null);
   const [stagedUri, setStagedUri] = useState<string | null>(null);
@@ -215,7 +220,7 @@ export function ProfilePhotoEditor({ uid, displayName }: ProfilePhotoEditorProps
             ? "Photo enregistrée sur ce téléphone."
             : "Aucune photo pour le moment."}
       </Text>
-      {status === "waiting" ? <ActivityIndicator color="#3C87F7" /> : null}
+      {status === "waiting" ? <ActivityIndicator color={colors.primary} /> : null}
       {message ? (
         <Text style={status === "error" ? styles.error : styles.refused}>{message}</Text>
       ) : null}
@@ -258,7 +263,8 @@ export function ProfilePhotoEditor({ uid, displayName }: ProfilePhotoEditorProps
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   wrap: {
     marginTop: 20,
     gap: 12,
@@ -268,14 +274,14 @@ const styles = StyleSheet.create({
     width: 112,
     height: 112,
     borderRadius: 56,
-    backgroundColor: "#E0ECFF",
+    backgroundColor: colors.infoSurface,
   },
 
   placeholder: {
     width: 112,
     height: 112,
     borderRadius: 56,
-    backgroundColor: "#E0ECFF",
+    backgroundColor: colors.infoSurface,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -283,25 +289,25 @@ const styles = StyleSheet.create({
   initial: {
     fontSize: 36,
     fontWeight: "700",
-    color: "#1E40AF",
+    color: colors.infoText,
   },
 
   hint: {
-    color: "#4B5563",
+    color: colors.textMuted,
     lineHeight: 20,
   },
 
   refused: {
-    color: "#1E40AF",
-    backgroundColor: "#E0ECFF",
+    color: colors.infoText,
+    backgroundColor: colors.infoSurface,
     borderRadius: 12,
     padding: 12,
     lineHeight: 20,
   },
 
   error: {
-    color: "#991B1B",
-    backgroundColor: "#FEE2E2",
+    color: colors.danger,
+    backgroundColor: colors.dangerSurface,
     borderRadius: 12,
     padding: 12,
     lineHeight: 20,
@@ -317,14 +323,14 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     minHeight: 44,
     borderRadius: 12,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 12,
   },
 
   primaryText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontWeight: "700",
   },
 
@@ -333,15 +339,15 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#FFFFFF",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 12,
   },
 
   secondaryText: {
-    color: "#1F2937",
+    color: colors.text,
     fontWeight: "700",
   },
 
@@ -349,3 +355,4 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
+}

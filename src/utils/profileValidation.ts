@@ -123,7 +123,7 @@ function availabilityMessage(slots: AvailabilitySlot[]) {
   );
 
   if (hasInvalidSlot) {
-    return "Chaque disponibilité doit respecter : jour 1-7 et 0 ≤ début < fin ≤ 1440.";
+    return "Chaque disponibilité doit indiquer un jour et une heure de début avant la fin.";
   }
 
   return undefined;

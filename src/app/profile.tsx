@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -17,6 +19,7 @@ import {
     SPORTS,
     dayLabel,
     formatMinutes,
+    parseClockToMinutes,
 } from "@/constants/profileOptions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubmitLock } from "@/hooks/useSubmitLock";
@@ -39,6 +42,9 @@ import {
 } from "@/utils/profileValidation";
 
 export default function ProfileScreen() {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   const router = useRouter();
   const { user, profile, refreshProfile } = useAuth();
   const dirty = useRef(false);
@@ -105,19 +111,18 @@ export default function ProfileScreen() {
 
   function addAvailability() {
     touch();
-    const startMinutes = Number(start);
-    const endMinutes = Number(end);
+    const startMinutes = parseClockToMinutes(start);
+    const endMinutes = parseClockToMinutes(end);
 
     if (
-      !Number.isInteger(startMinutes) ||
-      !Number.isInteger(endMinutes) ||
-      startMinutes < 0 ||
-      endMinutes > 1440 ||
+      startMinutes === null ||
+      endMinutes === null ||
       startMinutes >= endMinutes
     ) {
       setErrors((current) => ({
         ...current,
-        availability: "La disponibilité doit respecter : 0 ≤ début < fin ≤ 1440.",
+        availability:
+          "Indique une heure de début et de fin, par exemple 18:00 et 20:00.",
       }));
       return;
     }
@@ -330,8 +335,7 @@ export default function ProfileScreen() {
 
         <Text style={styles.label}>Disponibilités</Text>
         <Text style={styles.helper}>
-          Les horaires sont exprimés en minutes depuis minuit. Exemple : 18h =
-          1080.
+          Indique l'heure de début et de fin, par exemple 18:00 et 20:00.
         </Text>
         <View style={styles.optionsContainer}>
           {DAYS.map((item) => (
@@ -354,16 +358,18 @@ export default function ProfileScreen() {
         <TextInput
           value={start}
           onChangeText={setStart}
-          placeholder="Début en minutes (ex : 1080)"
-          keyboardType="numeric"
+          placeholder="Début (ex : 18:00)"
+          keyboardType="numbers-and-punctuation"
+          maxLength={5}
           editable={!pending}
           style={styles.input}
         />
         <TextInput
           value={end}
           onChangeText={setEnd}
-          placeholder="Fin en minutes (ex : 1200)"
-          keyboardType="numeric"
+          placeholder="Fin (ex : 20:00)"
+          keyboardType="numbers-and-punctuation"
+          maxLength={5}
           editable={!pending}
           style={styles.input}
         />
@@ -435,10 +441,11 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
   },
 
   content: {
@@ -450,30 +457,30 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   subtitle: {
     marginTop: 6,
     marginBottom: 20,
     fontSize: 16,
-    color: "#6B7280",
+    color: colors.textMuted,
   },
 
   banner: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: colors.warningSurface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
   },
 
   bannerText: {
-    color: "#92400E",
+    color: colors.warningText,
     lineHeight: 20,
   },
 
   back: {
-    color: "#3C87F7",
+    color: colors.primary,
     fontWeight: "700",
     marginBottom: 8,
   },
@@ -483,20 +490,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 16,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   helper: {
-    color: "#6B7280",
+    color: colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
     marginBottom: 12,
   },
 
   input: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
@@ -512,7 +519,7 @@ const styles = StyleSheet.create({
   counter: {
     textAlign: "right",
     marginTop: 5,
-    color: "#6B7280",
+    color: colors.textMuted,
     fontSize: 12,
   },
 
@@ -524,43 +531,43 @@ const styles = StyleSheet.create({
 
   option: {
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: colors.border,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 9,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
   },
 
   optionSelected: {
-    backgroundColor: "#3C87F7",
-    borderColor: "#3C87F7",
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 
   optionText: {
-    color: "#374151",
+    color: colors.text,
     fontWeight: "600",
   },
 
   optionTextSelected: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
   },
 
   secondaryButton: {
     marginTop: 12,
     borderWidth: 1,
-    borderColor: "#3C87F7",
+    borderColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 13,
     alignItems: "center",
   },
 
   secondaryButtonText: {
-    color: "#3C87F7",
+    color: colors.primary,
     fontWeight: "700",
   },
 
   availability: {
-    backgroundColor: "#E0ECFF",
+    backgroundColor: colors.infoSurface,
     borderRadius: 10,
     padding: 10,
     marginTop: 8,
@@ -571,25 +578,25 @@ const styles = StyleSheet.create({
   },
 
   availabilityText: {
-    color: "#1E40AF",
+    color: colors.infoText,
     fontWeight: "600",
     flex: 1,
   },
 
   removeText: {
-    color: "#B91C1C",
+    color: colors.danger,
     fontWeight: "700",
   },
 
   fieldError: {
-    color: "#B91C1C",
+    color: colors.danger,
     marginTop: 6,
   },
 
   formError: {
     marginTop: 20,
-    color: "#B91C1C",
-    backgroundColor: "#FEE2E2",
+    color: colors.danger,
+    backgroundColor: colors.dangerSurface,
     borderRadius: 12,
     padding: 14,
     lineHeight: 20,
@@ -597,7 +604,7 @@ const styles = StyleSheet.create({
 
   button: {
     marginTop: 24,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 15,
     alignItems: "center",
@@ -612,7 +619,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontSize: 16,
     fontWeight: "700",
   },
@@ -624,7 +631,8 @@ const styles = StyleSheet.create({
   },
 
   logoutText: {
-    color: "#B91C1C",
+    color: colors.danger,
     fontWeight: "700",
   },
 });
+}

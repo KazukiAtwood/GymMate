@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type MemberCardProps = {
@@ -15,6 +17,9 @@ export function MemberCard({
   availability,
   onPress,
 }: MemberCardProps) {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
@@ -33,9 +38,12 @@ export function MemberCard({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 16,
     padding: 20,
   },
@@ -47,13 +55,14 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
     marginBottom: 10,
   },
 
   info: {
     fontSize: 15,
-    color: "#4B5563",
+    color: colors.textMuted,
     marginTop: 4,
   },
 });
+}

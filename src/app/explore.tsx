@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { Redirect } from "expo-router";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 
@@ -7,6 +9,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isProfileReady } from "@/utils/profileValidation";
 
 export default function ExploreScreen() {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   const { profile } = useAuth();
 
   if (!isProfileReady(profile)) {
@@ -35,10 +40,11 @@ export default function ExploreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
     paddingTop: 64,
     paddingHorizontal: 20,
   },
@@ -46,12 +52,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   subtitle: {
     fontSize: 16,
-    color: "#6B7280",
+    color: colors.textMuted,
     marginTop: 6,
     marginBottom: 24,
   },
@@ -61,3 +67,4 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
 });
+}

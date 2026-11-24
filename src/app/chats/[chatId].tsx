@@ -1,3 +1,5 @@
+import { useTheme } from "@/contexts/ThemeContext";
+import type { AppColors } from "@/constants/theme";
 import { Redirect, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -33,6 +35,9 @@ import { readErrorCode } from "@/utils/errorCode";
 import { isProfileReady } from "@/utils/profileValidation";
 
 export default function ChatScreen() {
+  const colors = useTheme();
+  const styles = createStyles(colors);
+
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
   const router = useRouter();
   const { user, profile } = useAuth();
@@ -235,7 +240,7 @@ export default function ChatScreen() {
         <Text style={styles.back}>Retour</Text>
       </Pressable>
       {loading ? (
-        <ActivityIndicator style={styles.loader} size="large" color="#3C87F7" />
+        <ActivityIndicator style={styles.loader} size="large" color={colors.primary} />
       ) : error && !chat ? (
         <Text style={styles.info}>{error}</Text>
       ) : chat ? (
@@ -255,7 +260,7 @@ export default function ChatScreen() {
               <MessageBubble message={item} mine={item.senderId === user?.uid} />
             )}
             ListEmptyComponent={
-              messagesReady ? null : <ActivityIndicator color="#3C87F7" style={styles.loader} />
+              messagesReady ? null : <ActivityIndicator color={colors.primary} style={styles.loader} />
             }
           />
           {sendError ? <Text style={styles.sendError}>{sendError}</Text> : null}
@@ -267,7 +272,7 @@ export default function ChatScreen() {
               value={draft}
               onChangeText={setDraft}
               placeholder="Écrire un message"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.placeholder}
               style={styles.input}
               multiline
               maxLength={CHAT_TEXT_MAX}
@@ -286,16 +291,17 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
     padding: 24,
     paddingTop: 64,
   },
 
   back: {
-    color: "#3C87F7",
+    color: colors.primary,
     fontWeight: "700",
     marginBottom: 20,
   },
@@ -307,12 +313,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#1F2937",
+    color: colors.text,
   },
 
   info: {
     marginTop: 16,
-    color: "#6B7280",
+    color: colors.textMuted,
     lineHeight: 22,
   },
 
@@ -323,8 +329,8 @@ const styles = StyleSheet.create({
 
   sendError: {
     marginTop: 12,
-    color: "#991B1B",
-    backgroundColor: "#FEE2E2",
+    color: colors.danger,
+    backgroundColor: colors.dangerSurface,
     borderRadius: 12,
     padding: 12,
     lineHeight: 20,
@@ -332,7 +338,7 @@ const styles = StyleSheet.create({
 
   counter: {
     marginTop: 8,
-    color: "#6B7280",
+    color: colors.textMuted,
     textAlign: "right",
   },
 
@@ -350,24 +356,24 @@ const styles = StyleSheet.create({
     maxHeight: 120,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#FFFFFF",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    color: "#1F2937",
+    color: colors.text,
   },
 
   send: {
     minHeight: 44,
     borderRadius: 12,
-    backgroundColor: "#3C87F7",
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
   },
 
   sendText: {
-    color: "#FFFFFF",
+    color: colors.onPrimary,
     fontWeight: "700",
   },
 
@@ -375,3 +381,4 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
+}
